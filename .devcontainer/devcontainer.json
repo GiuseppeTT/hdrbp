@@ -1,0 +1,53 @@
+// Based on default python 3 Remote-Container devcontainer.json
+// For format details, see https://aka.ms/devcontainer.json
+// For config options, see the README at https://github.com/microsoft/vscode-dev-containers/tree/v0.177.0/containers/python-3
+
+{
+  "name": "Python 3",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "PYTHON_VERSION": "3.9",
+      "POETRY_VERSION": "1.1.6"
+    }
+  },
+
+  "settings": {
+    // VSCode
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+
+    // Python
+    "python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+    "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+    "python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
+    "python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
+    "python.linting.enabled": true,
+    "python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+    "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+    "python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
+    "python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
+    "python.pythonPath": "/usr/local/bin/python",
+
+    // GitLens
+    "gitlens.codeLens.enabled": false,
+    "gitlens.currentLine.enabled": false,
+    "gitlens.hovers.enabled": false,
+    "gitlens.statusBar.enabled": false
+  },
+
+  "extensions": ["eamodio.gitlens", "ms-python.python"],
+
+  // "forwardPorts": [],
+
+  "postCreateCommand": "poetry install",
+
+  // Comment out to connect as root instead
+  // For details, see https://aka.ms/vscode-remote/containers/non-root
+  "remoteUser": "vscode"
+}
