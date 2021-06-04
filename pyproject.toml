@@ -12,6 +12,7 @@ python = "^3.9"
 black = "^21.5b2"
 flake8 = "^3.9.2"
 isort = "^5.8.0"
+mypy = "^0.901"
 pre-commit = "^2.13.0"
 
 [tool.black]
@@ -20,6 +21,12 @@ line-length = 100
 [tool.isort]
 line_length = 100
 profile = "black"
+
+[tool.mypy]
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
