@@ -41,7 +41,7 @@
     "gitlens.statusBar.enabled": false
   },
 
-  "extensions": ["eamodio.gitlens", "ms-python.python"],
+  "extensions": ["bungcip.better-toml", "eamodio.gitlens", "ms-python.python"],
 
   // "forwardPorts": [],
 
