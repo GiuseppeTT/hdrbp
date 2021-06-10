@@ -22,19 +22,19 @@ class Step:
 
 @dataclass
 class StepData:
-    estimation: StepDataEstimation
-    holding: StepDataHolding
+    estimation: StepEstimationData
+    holding: StepHoldingData
 
 
 @dataclass
-class StepDataEstimation:
+class StepEstimationData:
     dates: pd.DatetimeIndex
     assets: pd.Index
     returns: np.ndarray
 
 
 @dataclass
-class StepDataHolding:
+class StepHoldingData:
     dates: pd.DatetimeIndex
     assets: pd.Index
     returns: np.ndarray
@@ -42,12 +42,12 @@ class StepDataHolding:
 
 @dataclass
 class StepResult:
-    estimation: StepResultEstimation
-    holding: StepResultHolding
+    estimation: StepEstimationResult
+    holding: StepHoldingResult
 
 
 @dataclass
-class StepResultEstimation:
+class StepEstimationResult:
     covariance_estimator: CovarianceEstimator
     weight_optimizer: WeightOptimizer
     covariances: np.ndarray
@@ -55,7 +55,7 @@ class StepResultEstimation:
 
 
 @dataclass
-class StepResultHolding:
+class StepHoldingResult:
     covariance_estimator: CovarianceEstimator
     weight_optimizer: WeightOptimizer
     weights: list[np.ndarray]
@@ -69,11 +69,11 @@ def parse_steps(steps: Optional[list[Step]]) -> pd.DataFrame:
         return None
 
     results = _parse_steps(steps)
-    result = _join_results(results)
-    result = _rearrange_result(result)
-    result = _clean_result(result)
+    results = _join_results(results)
+    results = _rearrange_results(results)
+    results = _clean_results(results)
 
-    return result
+    return results
 
 
 def _parse_steps(steps):
@@ -128,21 +128,21 @@ def _join_results(results):
     # step's estimation parse. The pandas.core.groupby.GroupBy.last() method is
     # a working around that relies on the order that parsed results are
     # concatenated and the automatic NaN dropping. Its current effect is
-    # merging those duplicated groups so that the joined parsed result makes
+    # merging those duplicated groups so that the joined parsed results makes
     # sense.
-    result = pd.concat(results)
-    result = (
-        result.groupby(["covariance_estimator", "weight_optimizer", "date"]).last().reset_index()
+    results = pd.concat(results)
+    results = (
+        results.groupby(["covariance_estimator", "weight_optimizer", "date"]).last().reset_index()
     )
 
-    return result
+    return results
 
 
-def _rearrange_result(result):
-    result["assets"] = result.agg(_add_assets, axis="columns")
-    result["before_rebalance_assets"] = result.agg(_add_before_rebalance_assets, axis="columns")
-    result["weights"] = result.agg(_add_weights, axis="columns")
-    result["before_rebalance_weights"] = result.agg(_add_before_rebalance_weights, axis="columns")
+def _rearrange_results(results):
+    results["assets"] = results.agg(_add_assets, axis="columns")
+    results["before_rebalance_assets"] = results.agg(_add_before_rebalance_assets, axis="columns")
+    results["weights"] = results.agg(_add_weights, axis="columns")
+    results["before_rebalance_weights"] = results.agg(_add_before_rebalance_weights, axis="columns")
 
     final_columns = [
         "covariance_estimator",
@@ -157,9 +157,9 @@ def _rearrange_result(result):
         "return",
     ]
 
-    result = result[final_columns]
+    results = results[final_columns]
 
-    return result
+    return results
 
 
 def _add_assets(row):
@@ -190,11 +190,11 @@ def _add_before_rebalance_weights(row):
         return None
 
 
-def _clean_result(result):
+def _clean_results(results):
     type_map = {
         "covariance_estimator": "string",
         "weight_optimizer": "string",
     }
-    result = result.astype(type_map)
+    results = results.astype(type_map)
 
-    return result
+    return results

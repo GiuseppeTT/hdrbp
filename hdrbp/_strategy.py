@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 
-from hdrbp._step import StepData, StepResult, StepResultEstimation, StepResultHolding
+from hdrbp._step import StepData, StepEstimationResult, StepHoldingResult, StepResult
 from hdrbp._util import basic_repr, basic_str, enforce_sum_one
 from hdrbp.covariance import CovarianceEstimator
 from hdrbp.weight import WeightOptimizer
@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 @basic_repr
 class Strategy:
     def __init__(
-        self,
-        covariance_estimator: CovarianceEstimator,
-        weight_optimizer: WeightOptimizer,
+        self, covariance_estimator: CovarianceEstimator, weight_optimizer: WeightOptimizer
     ) -> None:
         self._covariance_estimator = covariance_estimator
         self._weight_optimizer = weight_optimizer
@@ -42,27 +40,23 @@ class Strategy:
     def covariance_estimator(self) -> CovarianceEstimator:
         return self._covariance_estimator
 
-    def backtest_step(
-        self,
-        data: StepData,
-        covariances: Optional[np.ndarray] = None,
-    ) -> StepResult:
-        logger.debug(f"{self}: Backtesting step")
+    def backtest(self, data: StepData, covariances: Optional[np.ndarray] = None) -> StepResult:
+        logger.debug(f"{self}: Backtesting")
 
-        estimation_result = self._backtest_step_estimation(data.estimation, covariances)
-        holding_result = self._backtest_step_holding(data.holding, estimation_result)
+        estimation_result = self._backtest_estimation(data.estimation, covariances)
+        holding_result = self._backtest_holding(data.holding, estimation_result.weights)
 
         result = StepResult(estimation_result, holding_result)
 
         return result
 
-    def _backtest_step_estimation(self, data, covariances):
+    def _backtest_estimation(self, data, covariances):
         if covariances is None:
             covariances = self._covariance_estimator.estimate(data.returns)
 
         weights = self._weight_optimizer.optimize(covariances)
 
-        result = StepResultEstimation(
+        result = StepEstimationResult(
             self._covariance_estimator,
             self._weight_optimizer,
             covariances,
@@ -71,10 +65,10 @@ class Strategy:
 
         return result
 
-    def _backtest_step_holding(self, data, estimation_result):
-        weights, returns = self._propagate_weights(estimation_result.weights, data.returns)
+    def _backtest_holding(self, data, rebalance_weights):
+        weights, returns = self._propagate_weights(rebalance_weights, data.returns)
 
-        result = StepResultHolding(
+        result = StepHoldingResult(
             self._covariance_estimator,
             self._weight_optimizer,
             weights,
@@ -83,7 +77,8 @@ class Strategy:
 
         return result
 
-    def _propagate_weights(self, rebalance_weights, asset_returns):
+    @staticmethod
+    def _propagate_weights(rebalance_weights, asset_returns):
         asset_returns = np.nan_to_num(asset_returns)
         current_weights = rebalance_weights
 

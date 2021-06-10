@@ -19,24 +19,23 @@ class Backtester:
         self,
         rolling_window: RollingWindow,
         strategies: list[Strategy],
-        metric_calculators: Optional[list[MetricCalculator]] = None,
+        metric_calculators: list[MetricCalculator],
     ) -> None:
         self._rolling_window = rolling_window
         self._strategies = strategies
         self._metric_calculators = metric_calculators
 
         self._steps: Optional[list[Step]] = None
-        self._result: Optional[pd.DataFrame] = None
+        self._results: Optional[pd.DataFrame] = None
         self._metrics: Optional[pd.DataFrame] = None
 
-    # TODO: maybe not save steps
     def backtest(self, returns: pd.DataFrame) -> None:
         steps = self._backtest(returns)
-        result = self._parse_steps(steps)
-        metrics = self._calculate_metrics(result)
+        results = self._parse_steps(steps)
+        metrics = self._calculate_metrics(results)
 
         self._steps = steps
-        self._result = result
+        self._results = results
         self._metrics = metrics
 
     def _backtest(self, returns):
@@ -47,27 +46,27 @@ class Backtester:
         for index in range(possible_step_count):
             logger.info(f"{self}: Backtesting step {index}/{possible_step_count-1}")
 
-            data = self._rolling_window.pack_step_data(index, returns)
-            results = self._backtest_step_strategies(data)
+            data = self._rolling_window.extract_data(index, returns)
+            results = self._backtest_strategies(data)
             step = Step(index, data, results)
 
             steps.append(step)
 
         return steps
 
-    def _backtest_step_strategies(self, data):
+    def _backtest_strategies(self, data):
         results = []
         covariances_cache = {}
         for strategy in self._strategies:
             try:
                 covariances = covariances_cache[strategy.covariance_estimator]
             except KeyError:
-                result = strategy.backtest_step(data)
+                result = strategy.backtest(data)
 
                 covariances = result.estimation.covariances
                 covariances_cache[strategy.covariance_estimator] = covariances
             else:
-                result = strategy.backtest_step(data, covariances)
+                result = strategy.backtest(data, covariances)
 
             results.append(result)
 
@@ -78,14 +77,11 @@ class Backtester:
 
         return parse_steps(steps)
 
-    def _calculate_metrics(self, result):
+    def _calculate_metrics(self, results):
         logger.info(f"{self}: Calculating metrics")
 
-        if self._metric_calculators is None:
-            return None
-
         metrics = (
-            result.groupby(["covariance_estimator", "weight_optimizer"])
+            results.groupby(["covariance_estimator", "weight_optimizer"])
             .apply(self._calculate_group_metrics, self._metric_calculators)
             .reset_index()
         )
@@ -93,10 +89,10 @@ class Backtester:
         return metrics
 
     @staticmethod
-    def _calculate_group_metrics(result, calculators):
+    def _calculate_group_metrics(results, calculators):
         metrics = {}
         for calculator in calculators:
-            metric = calculator.calculate(result)
+            metric = calculator.calculate(results)
             metrics.update(metric)
 
         metrics = pd.Series(metrics)
@@ -104,17 +100,21 @@ class Backtester:
         return metrics
 
     @property
-    def result(self) -> pd.DataFrame:
-        if self._result is None:
-            raise AttributeError("You must backtest before accessing the result.")
+    def steps(self) -> list[Step]:
+        if self._steps is None:
+            raise AttributeError("You must backtest before accessing the steps.")
 
-        return self._result
+        return self._steps
+
+    @property
+    def results(self) -> pd.DataFrame:
+        if self._results is None:
+            raise AttributeError("You must backtest before accessing the results.")
+
+        return self._results
 
     @property
     def metrics(self) -> pd.DataFrame:
-        if self._metric_calculators is None:
-            raise AttributeError("You must provide metric calculators to access the metrics.")
-
         if self._metrics is None:
             raise AttributeError("You must backtest before accessing the metrics.")
 
