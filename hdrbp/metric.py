@@ -8,6 +8,8 @@ from hdrbp._util import basic_repr, basic_str, count_dates_per_year
 logger = logging.getLogger(__name__)
 
 
+@basic_str
+@basic_repr
 class MetricCalculator(ABC):
     def calculate(self, result: pd.DataFrame) -> dict[str, float]:
         logger.debug(f"{self}: Calculating metric")
@@ -19,8 +21,6 @@ class MetricCalculator(ABC):
         pass
 
 
-@basic_str
-@basic_repr
 class MeanReturn(MetricCalculator):
     def _calculate(self, result):
         result = result[result["return"].notna()]
