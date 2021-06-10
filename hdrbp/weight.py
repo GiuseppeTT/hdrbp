@@ -18,7 +18,13 @@ class WeightOptimizer(ABC):
 
 class EqualWeight(WeightOptimizer):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        logger.debug(f"{self}: Optimizing weights")
+
+        asset_count, _ = covariances.shape
+        weights = np.ones(asset_count)
+        weights = enforce_sum_one(weights)
+
+        return weights
 
 
 class EqualRiskContribution(WeightOptimizer):
