@@ -97,7 +97,7 @@ def _parse_step_estimation(index, data, result):
     parse = {
         "covariance_estimator": [repr(result.covariance_estimator)],
         "weight_optimizer": [repr(result.weight_optimizer)],
-        "index": [index],
+        "step": [index],
         "date": [data.dates.max()],
         "is_rebalance": [True],
         "rebalance_assets": [data.assets],
@@ -114,7 +114,7 @@ def _parse_step_holding(index, data, result):
     parse = {
         "covariance_estimator": date_count * [repr(result.covariance_estimator)],
         "weight_optimizer": date_count * [repr(result.weight_optimizer)],
-        "index": date_count * [index],
+        "step": date_count * [index],
         "date": data.dates,
         "is_rebalance": date_count * [False],
         "holding_assets": date_count * [data.assets],
@@ -150,7 +150,7 @@ def _rearrange_results(results):
     final_columns = [
         "covariance_estimator",
         "weight_optimizer",
-        "index",
+        "step",
         "date",
         "is_rebalance",
         "assets",
