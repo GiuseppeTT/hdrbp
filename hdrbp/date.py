@@ -25,7 +25,7 @@ class DateRule(ABC):
         return possible_count
 
     def filter_estimation_dates(self, index: int, dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
-        logger.debug(f"{self}: Extracting estimation dates")
+        logger.debug(f"{self}: Filtering estimation dates")
 
         start = index * self._holding_size
         end = index * self._holding_size + self._estimation_size
@@ -34,7 +34,7 @@ class DateRule(ABC):
         return filtered_dates
 
     def filter_holding_dates(self, index: int, dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
-        logger.debug(f"{self}: Extracting holding dates")
+        logger.debug(f"{self}: Filtering holding dates")
 
         start = index * self._holding_size + self._estimation_size
         end = index * self._holding_size + self._estimation_size + self._holding_size

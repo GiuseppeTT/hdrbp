@@ -41,7 +41,7 @@ class Strategy:
         return self._covariance_estimator
 
     def backtest(self, data: StepData, covariances: Optional[np.ndarray] = None) -> StepResult:
-        logger.debug(f"{self}: Backtesting")
+        logger.debug(f"{self}: Backtesting data")
 
         estimation_result = self._backtest_estimation(data.estimation, covariances)
         holding_result = self._backtest_holding(data.holding, estimation_result.weights)

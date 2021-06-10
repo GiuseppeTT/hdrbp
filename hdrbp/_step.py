@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -62,11 +61,8 @@ class StepHoldingResult:
     returns: np.ndarray
 
 
-def parse_steps(steps: Optional[list[Step]]) -> pd.DataFrame:
+def parse_steps(steps: list[Step]) -> pd.DataFrame:
     logger.debug("Step: Parsing steps")
-
-    if steps is None:
-        return None
 
     results = _parse_steps(steps)
     results = _join_results(results)
@@ -77,8 +73,6 @@ def parse_steps(steps: Optional[list[Step]]) -> pd.DataFrame:
 
 
 def _parse_steps(steps):
-    logger.debug("Step: Parsing steps")
-
     parsed_results = []
     for step in steps:
         index = step.index
