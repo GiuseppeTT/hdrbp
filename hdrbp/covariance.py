@@ -39,7 +39,13 @@ class EqualVariance(CovarianceEstimator):
         raise NotImplementedError
 
     def _demeaned_estimate(self, returns):
-        raise NotImplementedError
+        logger.debug(f"{self}: Demeaned estimating covariances")
+
+        time_count, asset_count = returns.shape
+        global_variance = np.sum(returns**2) / (time_count * asset_count)
+        covariances = global_variance * np.eye(asset_count)
+
+        return covariances
 
 
 class ZeroCorrelation(CovarianceEstimator):
