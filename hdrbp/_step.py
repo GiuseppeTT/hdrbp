@@ -81,10 +81,11 @@ def _parse_steps(steps):
 
     parsed_results = []
     for step in steps:
+        index = step.index
         data = step.data
         for result in step.results:
-            estimation_parse = _parse_step_estimation(data.estimation, result.estimation)
-            holding_parse = _parse_step_holding(data.holding, result.holding)
+            estimation_parse = _parse_step_estimation(index, data.estimation, result.estimation)
+            holding_parse = _parse_step_holding(index, data.holding, result.holding)
 
             parsed_result = pd.concat((estimation_parse, holding_parse))
             parsed_results.append(parsed_result)
@@ -92,10 +93,11 @@ def _parse_steps(steps):
     return parsed_results
 
 
-def _parse_step_estimation(data, result):
+def _parse_step_estimation(index, data, result):
     parse = {
         "covariance_estimator": [repr(result.covariance_estimator)],
         "weight_optimizer": [repr(result.weight_optimizer)],
+        "index": [index],
         "date": [data.dates.max()],
         "is_rebalance": [True],
         "rebalance_assets": [data.assets],
@@ -107,11 +109,12 @@ def _parse_step_estimation(data, result):
     return parse
 
 
-def _parse_step_holding(data, result):
+def _parse_step_holding(index, data, result):
     date_count = len(data.dates)
     parse = {
         "covariance_estimator": date_count * [repr(result.covariance_estimator)],
         "weight_optimizer": date_count * [repr(result.weight_optimizer)],
+        "index": date_count * [index],
         "date": data.dates,
         "is_rebalance": date_count * [False],
         "holding_assets": date_count * [data.assets],
@@ -147,6 +150,7 @@ def _rearrange_results(results):
     final_columns = [
         "covariance_estimator",
         "weight_optimizer",
+        "index",
         "date",
         "is_rebalance",
         "assets",
