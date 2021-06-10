@@ -20,7 +20,7 @@ class EqualWeight(WeightOptimizer):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
         logger.debug(f"{self}: Optimizing weights")
 
-        asset_count, _ = covariances.shape
+        _, asset_count = covariances.shape
         weights = np.ones(asset_count)
         weights = enforce_sum_one(weights)
 
