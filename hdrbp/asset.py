@@ -18,7 +18,8 @@ class AssetRule(ABC):
     def select_assets(self, returns: pd.DataFrame) -> pd.Index:
         pass
 
-    def _find_valid_assets(self, returns):
+    @staticmethod
+    def _find_valid_assets(returns):
         is_valid_assets = returns.notna().all()
         valid_assets = returns.columns[is_valid_assets]
 

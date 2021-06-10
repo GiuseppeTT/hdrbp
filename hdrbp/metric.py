@@ -8,7 +8,6 @@ from hdrbp._util import basic_repr, basic_str, count_dates_per_year
 logger = logging.getLogger(__name__)
 
 
-# TODO: metric computer?
 class MetricCalculator(ABC):
     def calculate(self, result: pd.DataFrame) -> dict[str, float]:
         logger.debug(f"{self}: Calculating metric")
