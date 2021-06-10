@@ -34,6 +34,30 @@ class CovarianceEstimator(ABC):
         pass
 
 
+class EqualVariance(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+class ZeroCorrelation(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+class EqualCorrelation(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
 class SampleCovariance(CovarianceEstimator):
     def _meaned_estimate(self, returns):
         raise NotImplementedError
@@ -45,3 +69,53 @@ class SampleCovariance(CovarianceEstimator):
         covariances = returns.T @ returns / time_count
 
         return covariances
+
+
+class RiskMetrics1994(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+class RiskMetrics2006(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+class LinearShrinkage(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+class NonLinearShrinkage(CovarianceEstimator):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+# TODO: choose a better name?
+# TODO: merge CCC and DCC into one class?
+class GARCHCovariance(CovarianceEstimator, ABC):
+    def _meaned_estimate(self, returns):
+        raise NotImplementedError
+
+    def _demeaned_estimate(self, returns):
+        raise NotImplementedError
+
+
+class ConstantConditionalCorrelation(GARCHCovariance):
+    pass
+
+
+class DynamicConditionalCorrelation(GARCHCovariance):
+    pass

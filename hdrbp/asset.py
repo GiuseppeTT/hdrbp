@@ -34,3 +34,8 @@ class ValidAsset(AssetRule):
         assets = valid_assets[: self._size]
 
         return assets
+
+
+class LiquidAsset(AssetRule):
+    def select_assets(self, returns: pd.DataFrame) -> pd.Index:
+        raise NotImplementedError

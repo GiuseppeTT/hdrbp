@@ -21,6 +21,11 @@ class MetricCalculator(ABC):
         pass
 
 
+class CAGR(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
 class MeanReturn(MetricCalculator):
     def _calculate(self, result):
         result = result[result["return"].notna()]
@@ -34,3 +39,58 @@ class MeanReturn(MetricCalculator):
         mean_return = dates_per_year * daily_mean_return
 
         return mean_return
+
+
+class Volatility(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class SharpeRatio(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class Turnover(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class MaxDrawdown(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class ValueAtRisk(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class ExpectedShortfall(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class MeanWeightGini(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class MeanRiskContributionGini(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class MeanVariance(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class MeanCorrelation(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError
+
+
+class MeanDiversificationRatio(MetricCalculator):
+    def _calculate(self, result):
+        raise NotImplementedError

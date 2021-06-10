@@ -66,3 +66,9 @@ class DateRule(ABC):
 class TradingDate(DateRule):
     def _break_dates(self, dates):
         return dates
+
+
+# TODO: choose better name
+class PeriodDate(DateRule):
+    def _break_dates(self, dates):
+        raise NotImplementedError

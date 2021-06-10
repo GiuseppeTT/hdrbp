@@ -8,7 +8,7 @@ from hdrbp.asset import ValidAsset
 from hdrbp.covariance import SampleCovariance
 from hdrbp.date import TradingDate
 from hdrbp.metric import MeanReturn
-from hdrbp.weight import InverseVolatility
+from hdrbp.weight import NaiveEqualRiskContribution
 
 # Return generation
 SEED = 42
@@ -68,7 +68,7 @@ def define_backtester():
             SampleCovariance(),
         ],
         weight_optimizers=[
-            InverseVolatility(),
+            NaiveEqualRiskContribution(),
         ],
     )
 

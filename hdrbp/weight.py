@@ -16,7 +16,17 @@ class WeightOptimizer(ABC):
         pass
 
 
-class InverseVolatility(WeightOptimizer):
+class EqualWeight(WeightOptimizer):
+    def optimize(self, covariances: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+
+class EqualRiskContribution(WeightOptimizer):
+    def optimize(self, covariances: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+
+class NaiveEqualRiskContribution(WeightOptimizer):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
         logger.debug(f"{self}: Optimizing weights")
 
@@ -24,3 +34,31 @@ class InverseVolatility(WeightOptimizer):
         weights = enforce_sum_one(1 / volatilities)
 
         return weights
+
+
+class MinimumVariance(WeightOptimizer):
+    def optimize(self, covariances: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+
+class MinimumCorrelation(MinimumVariance):
+    def optimize(self, covariances: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+
+class MostDiversified(WeightOptimizer):
+    def optimize(self, covariances: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+
+class HierarchicalWeightOptimizer(WeightOptimizer, ABC):
+    def optimize(self, covariances: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+
+class HierarchicalEqualWeight(HierarchicalWeightOptimizer):
+    pass
+
+
+class HierarchicalEqualRiskContribution(HierarchicalWeightOptimizer):
+    pass
