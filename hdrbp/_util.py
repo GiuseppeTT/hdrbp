@@ -44,6 +44,10 @@ def basic_str(cls: type) -> type:
     return cls
 
 
+def build_covariances(correlations: np.ndarray, volatilities: np.ndarray) -> np.ndarray:
+    return correlations * volatilities[:, None] * volatilities[None, :]
+
+
 def count_dates_per_year(dates: pd.Series) -> float:
     date_count = dates.size
     year_count = count_years(dates)
@@ -68,6 +72,22 @@ def demean(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
 
 def enforce_sum_one(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
     return array / np.sum(array, *args, **kwargs)
+
+
+def extract_correlations(covariances: np.ndarray) -> np.ndarray:
+    volatilities = extract_volatilities(covariances)
+
+    correlations = covariances / volatilities[:, None] / volatilities[None, :]
+    correlations = np.clip(correlations, -1, 1)
+
+    return correlations
+
+
+def extract_upper_elements(array: np.ndarray) -> np.ndarray:
+    upper_element_indices = np.triu_indices_from(array, 1)
+    upper_elements = array[upper_element_indices]
+
+    return upper_elements
 
 
 def extract_volatilities(covariances: np.ndarray) -> np.ndarray:
