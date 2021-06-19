@@ -20,21 +20,24 @@ ESTIMATION_SIZE = 100
 HOLDING_SIZE = 10
 PORTFOLIO_SIZE = 5
 
-logging.basicConfig(
-    format="[{asctime}] [{levelname:<8}] {message}",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    style="{",
-    level=logging.DEBUG,
-)
-
 
 def main():
+    setup_logger()
     returns = generate_returns()
     backtester = define_backtester()
 
     backtester.backtest(returns)
 
     print(backtester.metrics)
+
+
+def setup_logger():
+    logging.basicConfig(
+        format="[{asctime}] [{levelname:<8}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        style="{",
+        level=logging.DEBUG,
+    )
 
 
 def generate_returns():
