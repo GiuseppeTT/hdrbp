@@ -27,16 +27,16 @@ class CAGR(MetricCalculator):
 
 
 class MeanReturn(MetricCalculator):
-    def _calculate(self, result):
+    def _calculate(self, result, annualize=True):
         result = result[result["return"].notna()]
 
-        dates = result["date"]
         returns = result["return"]
+        mean_return = returns.mean()
 
-        dates_per_year = count_dates_per_year(dates)
-        daily_mean_return = returns.mean()
-
-        mean_return = dates_per_year * daily_mean_return
+        if annualize:
+            dates = result["date"]
+            dates_per_year = count_dates_per_year(dates)
+            mean_return = dates_per_year * mean_return
 
         return mean_return
 
