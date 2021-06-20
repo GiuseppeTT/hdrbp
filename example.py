@@ -23,8 +23,8 @@ PORTFOLIO_SIZE = 5
 
 def main():
     setup_logger()
-    returns = generate_returns()
-    backtester = define_backtester()
+    returns = generate_returns(TIME_COUNT, ASSET_COUNT, SEED)
+    backtester = define_backtester(ESTIMATION_SIZE, HOLDING_SIZE, PORTFOLIO_SIZE)
 
     backtester.backtest(returns)
 
@@ -40,30 +40,30 @@ def setup_logger():
     )
 
 
-def generate_returns():
-    dates = pd.date_range("01/01/2021", periods=TIME_COUNT, freq="B")
-    tickers = [str(i) for i in range(ASSET_COUNT)]
-    return_values = generate_return_values()
+def generate_returns(time_count, asset_count, seed=None):
+    dates = pd.date_range("01/01/2021", periods=time_count, freq="B")
+    tickers = [str(i) for i in range(asset_count)]
+    return_values = generate_return_values(time_count, asset_count, seed)
 
     returns = pd.DataFrame(return_values, index=dates, columns=tickers)
 
     return returns
 
 
-def generate_return_values():
-    generator = default_rng(seed=SEED)
-    means = generator.uniform(0, 0.0001, size=ASSET_COUNT)
-    raw_covariances = generator.uniform(0, 0.01, size=(ASSET_COUNT, ASSET_COUNT))
+def generate_return_values(time_count, asset_count, seed):
+    generator = default_rng(seed)
+    means = generator.uniform(0, 0.0001, size=asset_count)
+    raw_covariances = generator.uniform(0, 0.01, size=(asset_count, asset_count))
     covariances = raw_covariances.T @ raw_covariances
-    return_values = generator.multivariate_normal(means, covariances, size=TIME_COUNT)
+    return_values = generator.multivariate_normal(means, covariances, size=time_count)
 
     return return_values
 
 
-def define_backtester():
+def define_backtester(estimation_size, holding_size, portfolio_size):
     rolling_window = RollingWindow(
-        date_rule=TradingDate(estimation_size=ESTIMATION_SIZE, holding_size=HOLDING_SIZE),
-        asset_rule=ValidAsset(size=PORTFOLIO_SIZE),
+        date_rule=TradingDate(estimation_size, holding_size),
+        asset_rule=ValidAsset(portfolio_size),
     )
 
     strategies = Strategy.from_product(
