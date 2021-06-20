@@ -246,11 +246,43 @@ def _count_ewma_terms(
 
 
 class LinearShrinkage(CovarianceEstimator):
+    # https://doi.org/10.1016/S0047-259X(03)00096-4
     def _meaned_estimate(self, returns):
         raise NotImplementedError
 
     def _demeaned_estimate(self, returns):
-        raise NotImplementedError
+        logger.debug(f"{self}: Demeaned estimating covariances")
+
+        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        target_covariances = EqualVariance()._demeaned_estimate(returns)
+        shrinkage = _estimate_shrinkage(returns, sample_covariances, target_covariances)
+
+        covariances = (1 - shrinkage) * sample_covariances + shrinkage * target_covariances
+
+        return covariances
+
+
+# TODO: find better names for d_squared and b_squared
+def _estimate_shrinkage(returns, sample_covariances, target_covariances):
+    d_squared = _compute_squared_norm(sample_covariances - target_covariances)
+
+    time_count, _ = returns.shape
+    b_squared = 0
+    for row in returns:
+        b_squared += _compute_squared_norm(np.outer(row, row) - sample_covariances)
+    b_squared = b_squared / time_count ** 2
+    b_squared = min(b_squared, d_squared)
+
+    shrinkage = b_squared / d_squared
+
+    return shrinkage
+
+
+def _compute_squared_norm(matrix):
+    _, column_count = matrix.shape
+    squared_norm = np.einsum("ij, ij", matrix, matrix) / column_count
+
+    return squared_norm
 
 
 class NonLinearShrinkage(CovarianceEstimator):
