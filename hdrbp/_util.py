@@ -47,8 +47,8 @@ def basic_str(cls: type) -> type:
     return cls
 
 
-def build_covariances(correlations: np.ndarray, volatilities: np.ndarray) -> np.ndarray:
-    return correlations * volatilities[:, None] * volatilities[None, :]
+def build_covariances(volatilities: np.ndarray, correlations: np.ndarray) -> np.ndarray:
+    return correlations * volatilities[:, np.newaxis] * volatilities[np.newaxis, :]
 
 
 def count_dates_per_year(dates: pd.Series) -> float:
@@ -80,7 +80,7 @@ def enforce_sum_one(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
 def extract_correlations(covariances: np.ndarray) -> np.ndarray:
     volatilities = extract_volatilities(covariances)
 
-    correlations = covariances / volatilities[:, None] / volatilities[None, :]
+    correlations = covariances / volatilities[:, np.newaxis] / volatilities[np.newaxis, :]
     correlations = np.clip(correlations, -1, 1)
 
     return correlations

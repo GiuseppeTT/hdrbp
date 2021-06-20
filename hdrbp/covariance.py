@@ -51,8 +51,11 @@ class EqualVariance(CovarianceEstimator):
     def _demeaned_estimate(self, returns):
         logger.debug(f"{self}: Demeaned estimating covariances")
 
-        time_count, asset_count = returns.shape
-        global_variance = np.sum(returns ** 2) / (time_count * asset_count)
+        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        sample_variances = np.diag(sample_covariances)
+
+        _, asset_count = returns.shape
+        global_variance = np.mean(sample_variances)
         covariances = global_variance * np.eye(asset_count)
 
         return covariances
@@ -65,9 +68,8 @@ class ZeroCorrelation(CovarianceEstimator):
     def _demeaned_estimate(self, returns):
         logger.debug(f"{self}: Demeaned estimating covariances")
 
-        time_count, _ = returns.shape
-        variances = np.sum(returns ** 2, axis=0) / time_count
-        covariances = np.diag(variances)
+        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        covariances = np.diag(np.diag(sample_covariances))
 
         return covariances
 
@@ -79,14 +81,14 @@ class EqualCorrelation(CovarianceEstimator):
     def _demeaned_estimate(self, returns):
         logger.debug(f"{self}: Demeaned estimating covariances")
 
-        time_count, asset_count = returns.shape
-        raw_covariances = returns.T @ returns / time_count
-        raw_volatilities = extract_volatilities(raw_covariances)
-        raw_correlations = extract_correlations(raw_covariances)
+        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        sample_volatilities = extract_volatilities(sample_covariances)
+        sample_correlations = extract_correlations(sample_covariances)
 
-        volatilities = raw_volatilities
+        volatilities = sample_volatilities
 
-        global_correlation = np.mean(extract_upper_elements(raw_correlations))
+        _, asset_count = returns.shape
+        global_correlation = np.mean(extract_upper_elements(sample_correlations))
         # fmt: off
         correlations = (
             (1 - global_correlation) * np.eye(asset_count)
@@ -94,7 +96,7 @@ class EqualCorrelation(CovarianceEstimator):
         )
         # fmt: on
 
-        covariances = build_covariances(correlations, volatilities)
+        covariances = build_covariances(volatilities, correlations)
 
         return covariances
 
