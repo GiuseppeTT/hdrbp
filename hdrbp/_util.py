@@ -51,7 +51,53 @@ def build_covariances(volatilities: np.ndarray, correlations: np.ndarray) -> np.
     return correlations * volatilities[:, np.newaxis] * volatilities[np.newaxis, :]
 
 
-def count_dates_per_year(dates: pd.Series) -> float:
+def compute_correlation(covariances: np.ndarray, weights: np.ndarray) -> float:
+    correlations = extract_correlations(covariances)
+    correlation = weights @ correlations @ weights
+
+    return correlation
+
+
+def compute_diversification_ratio(covariances: np.ndarray, weights: np.ndarray) -> float:
+    volatilities = extract_volatilities(covariances)
+    naive_volatility = weights @ volatilities
+    volatility = np.sqrt(weights @ covariances @ weights)
+
+    diversification_ratio = naive_volatility / volatility
+
+    return diversification_ratio
+
+
+def compute_drawdowns(prices: np.ndarray) -> np.ndarray:
+    return (np.maximum.accumulate(prices) - prices) / np.maximum.accumulate(prices)
+
+
+def compute_gini(array: np.ndarray) -> float:
+    array = np.sort(array)
+    size = array.size
+    indexes = np.arange(1, size + 1)
+
+    gini = 2 / size * np.sum(indexes * array) / np.sum(array) - (size + 1) / size
+
+    return gini
+
+
+def compute_prices(returns: np.ndarray) -> np.ndarray:
+    return np.cumprod(1 + returns)
+
+
+def compute_risk_contributions(covariances: np.ndarray, weights: np.ndarray) -> float:
+    risk_contributions = weights * (covariances @ weights)
+    risk_contributions = enforce_sum_one(risk_contributions)
+
+    return risk_contributions
+
+
+def compute_variance(covariances: np.ndarray, weights: np.ndarray) -> float:
+    return weights @ covariances @ weights
+
+
+def count_dates_per_year(dates: pd.DatetimeIndex) -> float:
     date_count = dates.size
     year_count = count_years(dates)
 
@@ -60,7 +106,7 @@ def count_dates_per_year(dates: pd.Series) -> float:
     return dates_per_year
 
 
-def count_years(dates: pd.Series) -> float:
+def count_years(dates: pd.DatetimeIndex) -> float:
     period_size = dates.max() - dates.min()
     year_size = np.timedelta64(1, "Y")
 
