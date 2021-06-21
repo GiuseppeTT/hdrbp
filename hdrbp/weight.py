@@ -1,9 +1,18 @@
 import logging
 from abc import ABC, abstractmethod
 
+import cvxopt
 import numpy as np
 
-from hdrbp._util import basic_repr, basic_str, enforce_sum_one, extract_volatilities
+from hdrbp._util import (
+    CVXOPT_OPTIONS,
+    basic_repr,
+    basic_str,
+    enforce_sum_one,
+    extract_correlations,
+    extract_volatilities,
+    extract_weights,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +53,37 @@ class NaiveEqualRiskContribution(WeightOptimizer):
 
 class MinimumVariance(WeightOptimizer):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        # Minimize variance = weights @ covariances @ weights
+        # Subjected to weights >= 0 and sum(weights) = 1
+
+        logger.debug(f"{self}: Optimizing weights")
+
+        _, asset_count = covariances.shape
+
+        P = cvxopt.matrix(covariances)
+        q = cvxopt.matrix(0.0, (asset_count, 1))
+        G = cvxopt.matrix(-np.eye(asset_count))
+        h = cvxopt.matrix(0.0, (asset_count, 1))
+        A = cvxopt.matrix(1.0, (1, asset_count))
+        b = cvxopt.matrix(1.0)
+
+        solution = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
+        weights = extract_weights(solution)
+
+        return weights
 
 
-class MinimumCorrelation(MinimumVariance):
+class MinimumCorrelation(WeightOptimizer):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        # Minimize "correlation" = weights @ correlations @ weights
+        # Subjected to weights >= 0 and sum(weights) = 1
+
+        logger.debug(f"{self}: Optimizing weights")
+
+        correlations = extract_correlations(covariances)
+        weights = MinimumVariance().optimize(correlations)
+
+        return weights
 
 
 class MostDiversified(WeightOptimizer):

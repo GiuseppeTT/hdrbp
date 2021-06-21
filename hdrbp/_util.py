@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 FLOAT_RESOLUTION = sys.float_info.epsilon
+CVXOPT_OPTIONS = {"show_progress": False}
 
 
 def basic_repr(cls: type) -> type:
@@ -141,3 +142,11 @@ def extract_upper_elements(array: np.ndarray) -> np.ndarray:
 
 def extract_volatilities(covariances: np.ndarray) -> np.ndarray:
     return np.sqrt(np.diag(covariances))
+
+
+def extract_weights(results: dict) -> np.ndarray:
+    solution = results["x"]
+    solution = np.array(solution)
+    solution = solution.flatten()
+
+    return solution
