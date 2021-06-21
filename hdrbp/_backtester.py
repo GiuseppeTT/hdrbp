@@ -89,10 +89,19 @@ class Backtester:
         return metrics
 
     @staticmethod
-    def _calculate_group_metrics(results, calculators):
+    def _calculate_group_metrics(result, calculators):
+        covariance_estimator = result["covariance_estimator"].values[0]
+        weight_optimizer = result["weight_optimizer"].values[0]
+        logger.debug(
+            f"Backtester: Calculating metrics of group "
+            f"{covariance_estimator=}"
+            f" and "
+            f"{weight_optimizer=}"
+        )
+
         metrics = {}
         for calculator in calculators:
-            metric = calculator.calculate(results)
+            metric = calculator.calculate(result)
             metrics.update(metric)
 
         metrics = pd.Series(metrics)
