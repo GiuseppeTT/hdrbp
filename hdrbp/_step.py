@@ -78,7 +78,7 @@ def _parse_steps(steps):
         index = step.index
         data = step.data
 
-        logger.debug(f"Step: Parsing step {index}")
+        logger.info(f"Step: Parsing step {index}")
         for result in step.results:
             covariance_estimator = result.estimation.covariance_estimator
             weight_optimizer = result.estimation.weight_optimizer
@@ -133,6 +133,9 @@ def _join_results(results):
     # concatenated and the automatic NaN dropping. Its current effect is
     # merging those duplicated groups so that the joined parsed results makes
     # sense.
+
+    logger.debug("Step: Joining parsed results")
+
     results = pd.concat(results)
     results = (
         results.groupby(["covariance_estimator", "weight_optimizer", "date"]).last().reset_index()
@@ -142,6 +145,8 @@ def _join_results(results):
 
 
 def _rearrange_results(results):
+    logger.debug("Step: Rearranging joined results")
+
     results["assets"] = results.agg(_add_assets, axis="columns")
     results["before_rebalance_assets"] = results.agg(_add_before_rebalance_assets, axis="columns")
     results["weights"] = results.agg(_add_weights, axis="columns")
