@@ -24,20 +24,21 @@ class CovarianceEstimator(ABC):
     def __hash__(self) -> int:
         return hash(repr(self))
 
-    def estimate(self, returns: np.ndarray) -> np.ndarray:
+    def estimate(self, returns: np.ndarray, is_demeaned: bool = False) -> np.ndarray:
         logger.debug(f"{self}: Estimating covariances")
 
-        try:
+        if is_demeaned:
+            covariances = self._demeaned_estimate(returns)
+        else:
             covariances = self._meaned_estimate(returns)
-        except NotImplementedError:
-            demeaned_returns = demean(returns, axis=0, keepdims=True)
-            covariances = self._demeaned_estimate(demeaned_returns)
 
         return covariances
 
-    @abstractmethod
     def _meaned_estimate(self, returns):
-        pass
+        demeaned_returns = demean(returns, axis=0, keepdims=True)
+        covariances = self._demeaned_estimate(demeaned_returns)
+
+        return covariances
 
     @abstractmethod
     def _demeaned_estimate(self, returns):
@@ -45,13 +46,8 @@ class CovarianceEstimator(ABC):
 
 
 class EqualVariance(CovarianceEstimator):
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
-        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        sample_covariances = SampleCovariance().estimate(returns, is_demeaned=True)
         sample_variances = np.diag(sample_covariances)
 
         _, asset_count = returns.shape
@@ -62,26 +58,16 @@ class EqualVariance(CovarianceEstimator):
 
 
 class ZeroCorrelation(CovarianceEstimator):
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
-        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        sample_covariances = SampleCovariance().estimate(returns, is_demeaned=True)
         covariances = np.diag(np.diag(sample_covariances))
 
         return covariances
 
 
 class EqualCorrelation(CovarianceEstimator):
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
-        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
+        sample_covariances = SampleCovariance().estimate(returns, is_demeaned=True)
         sample_volatilities = extract_volatilities(sample_covariances)
         sample_correlations = extract_correlations(sample_covariances)
 
@@ -102,12 +88,7 @@ class EqualCorrelation(CovarianceEstimator):
 
 
 class SampleCovariance(CovarianceEstimator):
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
         time_count, _ = returns.shape
         covariances = returns.T @ returns / time_count
 
@@ -116,47 +97,31 @@ class SampleCovariance(CovarianceEstimator):
 
 class RiskMetrics1994(CovarianceEstimator):
     # RiskMetrics - Technical Document
-    def __init__(self, smooth: float = 0.94) -> None:
-        self._smooth = smooth
-
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
+    def __init__(self) -> None:
+        self._smooth = 0.94
 
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
         return _apply_ewma(returns, self._smooth)
 
 
 class RiskMetrics2006(CovarianceEstimator):
     # The RiskMetrics 2006 methodology
-    def __init__(
-        self,
-        min_mean_lifetime: float = 4,
-        mean_lifetime_ratio: float = np.sqrt(2),
-        mean_lifetime_count: int = 14,
-        mixture_decay: float = 1560,
-    ) -> None:
+    def __init__(self) -> None:
         # https://en.wikipedia.org/wiki/Exponential_decay
-        self._min_mean_lifetime = min_mean_lifetime
-        self._mean_lifetime_ratio = mean_lifetime_ratio
-        self._mean_lifetime_count = mean_lifetime_count
-        self._mixture_decay = mixture_decay
+        self._min_mean_lifetime = 4
+        self._mean_lifetime_ratio = np.sqrt(2)
+        self._mean_lifetime_count = 14
+        self._mixture_decay = 1560
 
-        exponents = np.arange(mean_lifetime_count)
-        mean_lifetimes = min_mean_lifetime * mean_lifetime_ratio ** exponents
+        exponents = np.arange(self._mean_lifetime_count)
+        mean_lifetimes = self._min_mean_lifetime * self._mean_lifetime_ratio ** exponents
         smooths = np.exp(-1 / mean_lifetimes)
-        mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(mixture_decay))
+        mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(self._mixture_decay))
 
         self._smooths = smooths
         self._mixture_weights = mixture_weights
 
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
         return _apply_mixture_ewma(returns, self._smooths, self._mixture_weights)
 
 
@@ -249,14 +214,9 @@ def _count_ewma_terms(
 
 class LinearShrinkage(CovarianceEstimator):
     # https://doi.org/10.1016/S0047-259X(03)00096-4
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
-        logger.debug(f"{self}: Demeaned estimating covariances")
-
-        sample_covariances = SampleCovariance()._demeaned_estimate(returns)
-        target_covariances = EqualVariance()._demeaned_estimate(returns)
+        sample_covariances = SampleCovariance().estimate(returns, is_demeaned=True)
+        target_covariances = EqualVariance().estimate(returns, is_demeaned=True)
         shrinkage = _estimate_shrinkage(returns, sample_covariances, target_covariances)
 
         covariances = (1 - shrinkage) * sample_covariances + shrinkage * target_covariances
@@ -288,9 +248,6 @@ def _compute_squared_norm(matrix):
 
 
 class NonLinearShrinkage(CovarianceEstimator):
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
         raise NotImplementedError
 
@@ -298,9 +255,6 @@ class NonLinearShrinkage(CovarianceEstimator):
 # TODO: choose a better name?
 # TODO: merge CCC and DCC into one class?
 class GARCHCovariance(CovarianceEstimator, ABC):
-    def _meaned_estimate(self, returns):
-        raise NotImplementedError
-
     def _demeaned_estimate(self, returns):
         raise NotImplementedError
 
