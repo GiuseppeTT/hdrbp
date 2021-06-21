@@ -241,6 +241,11 @@ def _estimate_shrinkage(returns, sample_covariances, target_covariances):
 
 
 def _compute_squared_norm(matrix):
+    # squared_norm = (
+    #     matrix[0, 0] ** 2 + ... + matrix[0, column_count - 1] ** 2
+    #     + ...
+    #     + matrix[row_count - 1, 0] ** 2 + ... + matrix[row_count - 1, column_count - 1] ** 2
+    # )
     _, column_count = matrix.shape
     squared_norm = np.einsum("ij, ij", matrix, matrix) / column_count
 
