@@ -5,10 +5,18 @@ from numpy.random import default_rng
 
 from hdrbp import Backtester, RollingWindow, Strategy
 from hdrbp.asset import ValidAsset
-from hdrbp.covariance import SampleCovariance
+from hdrbp.covariance import (
+    EqualCorrelation,
+    EqualVariance,
+    LinearShrinkage,
+    RiskMetrics1994,
+    RiskMetrics2006,
+    SampleCovariance,
+    ZeroCorrelation,
+)
 from hdrbp.date import TradingDate
 from hdrbp.metric import MeanReturn
-from hdrbp.weight import NaiveEqualRiskContribution
+from hdrbp.weight import EqualWeight, NaiveEqualRiskContribution
 
 # Return generation
 SEED = 42
@@ -68,9 +76,16 @@ def define_backtester(estimation_size, holding_size, portfolio_size):
 
     strategies = Strategy.from_product(
         covariance_estimators=[
+            EqualCorrelation(),
+            EqualVariance(),
+            LinearShrinkage(),
+            RiskMetrics1994(),
+            RiskMetrics2006(),
             SampleCovariance(),
+            ZeroCorrelation(),
         ],
         weight_optimizers=[
+            EqualWeight(),
             NaiveEqualRiskContribution(),
         ],
     )
