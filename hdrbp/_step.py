@@ -77,7 +77,13 @@ def _parse_steps(steps):
     for step in steps:
         index = step.index
         data = step.data
+
+        logger.debug(f"Step: Parsing step {index}")
         for result in step.results:
+            covariance_estimator = result.estimation.covariance_estimator
+            weight_optimizer = result.estimation.weight_optimizer
+            logger.debug(f"Step: Parsing result {covariance_estimator=} and {weight_optimizer=}")
+
             estimation_parse = _parse_step_estimation(index, data.estimation, result.estimation)
             holding_parse = _parse_step_holding(index, data.holding, result.holding)
 
