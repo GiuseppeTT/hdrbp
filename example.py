@@ -15,8 +15,27 @@ from hdrbp.covariance import (
     ZeroCorrelation,
 )
 from hdrbp.date import TradingDate
-from hdrbp.metric import MeanReturn
-from hdrbp.weight import EqualWeight, NaiveEqualRiskContribution
+from hdrbp.metric import (
+    ExpectedShortfall,
+    GeometricMeanReturn,
+    MaxDrawdown,
+    MeanCorrelation,
+    MeanDiversificationRatio,
+    MeanReturn,
+    MeanRiskContributionGini,
+    MeanVariance,
+    MeanWeightGini,
+    SharpeRatio,
+    ValueAtRisk,
+    Volatility,
+)
+from hdrbp.weight import (
+    EqualWeight,
+    MinimumCorrelation,
+    MinimumVariance,
+    MostDiversified,
+    NaiveEqualRiskContribution,
+)
 
 # Return generation
 SEED = 42
@@ -86,12 +105,26 @@ def define_backtester(estimation_size, holding_size, portfolio_size):
         ],
         weight_optimizers=[
             EqualWeight(),
+            MinimumCorrelation(),
+            MinimumVariance(),
+            MostDiversified(),
             NaiveEqualRiskContribution(),
         ],
     )
 
     metric_calculators = [
+        ExpectedShortfall(),
+        GeometricMeanReturn(),
+        MaxDrawdown(),
+        MeanCorrelation(),
+        MeanDiversificationRatio(),
         MeanReturn(),
+        MeanRiskContributionGini(),
+        MeanVariance(),
+        MeanWeightGini(),
+        SharpeRatio(),
+        ValueAtRisk(),
+        Volatility(),
     ]
 
     backtester = Backtester(rolling_window, strategies, metric_calculators)
