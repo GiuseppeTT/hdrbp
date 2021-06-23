@@ -67,6 +67,9 @@ def setup_logger():
         level=logging.DEBUG,
     )
 
+    numba_logger = logging.getLogger('numba')
+    numba_logger.setLevel(logging.WARNING)
+
 
 def generate_returns(time_count, asset_count, seed=None):
     dates = pd.date_range("01/01/2021", periods=time_count, freq="B")
