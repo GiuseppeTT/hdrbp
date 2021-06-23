@@ -108,6 +108,7 @@ class RiskMetrics2006(CovarianceEstimator):
     # The RiskMetrics 2006 methodology
     def __init__(self) -> None:
         # https://en.wikipedia.org/wiki/Exponential_decay
+
         self._min_mean_lifetime = 4
         self._mean_lifetime_ratio = np.sqrt(2)
         self._mean_lifetime_count = 14
@@ -246,6 +247,7 @@ def _compute_squared_norm(matrix):
     #     + ...
     #     + matrix[row_count - 1, 0] ** 2 + ... + matrix[row_count - 1, column_count - 1] ** 2
     # )
+
     _, column_count = matrix.shape
     squared_norm = np.einsum("ij, ij", matrix, matrix) / column_count
 
@@ -257,6 +259,7 @@ class NonLinearShrinkage(CovarianceEstimator):
         raise NotImplementedError
 
 
+# TODO
 # TODO: choose a better name?
 # TODO: merge CCC and DCC into one class?
 class GARCHCovariance(CovarianceEstimator, ABC):

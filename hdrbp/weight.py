@@ -114,6 +114,7 @@ class MostDiversified(WeightOptimizer):
         return weights
 
 
+# TODO
 class HierarchicalWeightOptimizer(WeightOptimizer, ABC):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
         raise NotImplementedError
