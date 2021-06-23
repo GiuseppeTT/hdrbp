@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 FLOAT_RESOLUTION = sys.float_info.epsilon
+ERROR_TOLERANCE = np.sqrt(FLOAT_RESOLUTION)  # Roughly 10 ** -8
 CVXOPT_OPTIONS = {"show_progress": False}
 
 

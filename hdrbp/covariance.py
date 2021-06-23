@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from hdrbp._util import (
-    FLOAT_RESOLUTION,
+    ERROR_TOLERANCE,
     basic_repr,
     basic_str,
     build_covariances,
@@ -127,7 +127,11 @@ class RiskMetrics2006(CovarianceEstimator):
 
 
 # TODO: Move comments to RiskMetrics1994 documentation
-def _apply_mixture_ewma(returns, smooths, mixture_weights):
+def _apply_mixture_ewma(
+    returns: np.ndarray,
+    smooths: np.ndarray,
+    mixture_weights: np.ndarray,
+) -> np.ndarray:
     # mixture_ewma[:, :, time + 1] = (
     #     mixture_weights[0] * ewma[:, :, time + 1, 0]
     #     + ...
@@ -193,7 +197,7 @@ def _apply_ewma(returns: np.ndarray, smooth: float) -> np.ndarray:
 def _count_ewma_terms(
     smooth: float,
     max_count: float = np.inf,
-    numerical_error: float = FLOAT_RESOLUTION,
+    error_tolerance: float = ERROR_TOLERANCE,
 ) -> int:
     # weight[index] = (1 - smooth) * smooth ** index
     #
@@ -201,11 +205,11 @@ def _count_ewma_terms(
     #
     # weights[term_count] + weights[term_count + 1] ... = smooth ** term_count
     #
-    # smooth ** term_count <= numerical_error
+    # smooth ** term_count <= error_tolerance
     #
-    # term_count = ceil( log(numerical_error) / log(smooth) )
+    # term_count = ceil( log(error_tolerance) / log(smooth) )
 
-    term_count = np.log(numerical_error) / np.log(smooth)
+    term_count = np.log(error_tolerance) / np.log(smooth)
     term_count = np.ceil(term_count)
     term_count = min(term_count, max_count)
     term_count = int(term_count)
