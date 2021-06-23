@@ -3,9 +3,11 @@ from abc import ABC, abstractmethod
 
 import cvxopt
 import numpy as np
+from numba import njit
 
 from hdrbp._util import (
     CVXOPT_OPTIONS,
+    ERROR_TOLERANCE,
     basic_repr,
     basic_str,
     enforce_sum_one,
@@ -37,8 +39,111 @@ class EqualWeight(WeightOptimizer):
 
 
 class EqualRiskContribution(WeightOptimizer):
+    # https://dx.doi.org/10.2139/ssrn.2297383
+    # https://dx.doi.org/10.2139/ssrn.2325255
+    # https://dx.doi.org/10.2139/ssrn.1987770
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        logger.debug(f"{self}: Optimizing weights")
+
+        return _optimize_equal_risk_contribution(covariances)
+
+
+@njit()
+def _optimize_equal_risk_contribution(
+    covariances: np.ndarray,
+    max_iteration_count: int = 1_000,
+    error_tolerance: float = ERROR_TOLERANCE,
+) -> np.ndarray:
+    _, asset_count = covariances.shape
+
+    weights = np.ones(asset_count)
+    weights = weights / np.sum(weights)
+    mean_covariances = covariances @ weights
+    portfolio_volatility = np.sqrt(weights @ covariances @ weights)
+    for _ in range(max_iteration_count):
+        for asset in range(asset_count):
+            old_weight = weights[asset]
+            new_weight = _update_weight(
+                asset,
+                old_weight,
+                covariances,
+                mean_covariances,
+                portfolio_volatility,
+                asset_count,
+            )
+
+            mean_covariances = _update_mean_covariances(
+                asset,
+                mean_covariances,
+                covariances,
+                old_weight,
+                new_weight,
+            )
+            portfolio_volatility = _update_portfolio_volatility(
+                asset,
+                portfolio_volatility,
+                covariances,
+                weights,
+                new_weight,
+                old_weight,
+            )
+
+            weights[asset] = new_weight
+
+        error = _compute_risk_contribution_error(weights, mean_covariances, asset_count)
+        if error < error_tolerance:
+            break
+
+    weights = weights / np.sum(weights)
+
+    return weights
+
+
+@njit()
+def _update_weight(
+    asset,
+    old_weight,
+    covariances,
+    mean_covariances,
+    portfolio_volatility,
+    asset_count,
+):
+    new_weight = (
+        -(mean_covariances[asset] - old_weight * covariances[asset, asset])
+        + np.sqrt(
+            (mean_covariances[asset] - old_weight * covariances[asset, asset]) ** 2
+            + 4 * covariances[asset, asset] * portfolio_volatility / asset_count
+        )
+    ) / (2 * covariances[asset, asset])
+
+    return new_weight
+
+
+@njit()
+def _update_mean_covariances(asset, mean_covariances, covariances, old_weight, new_weight):
+    return mean_covariances + covariances[:, asset] * (new_weight - old_weight)
+
+
+@njit()
+def _update_portfolio_volatility(
+    asset, portfolio_volatility, covariances, weights, new_weight, old_weight
+):
+    portfolio_volatility = np.sqrt(
+        portfolio_volatility ** 2
+        + 2 * (new_weight - old_weight) * covariances[asset, :] @ weights
+        + covariances[asset, asset] * (new_weight - old_weight) ** 2
+    )
+
+    return portfolio_volatility
+
+
+@njit()
+def _compute_risk_contribution_error(weights, mean_covariances, asset_count):
+    risk_contributions = weights * mean_covariances
+    risk_contributions = risk_contributions / np.sum(risk_contributions)
+    risk_contribution_error = np.max(np.abs(risk_contributions - 1 / asset_count))
+
+    return risk_contribution_error
 
 
 class NaiveEqualRiskContribution(WeightOptimizer):

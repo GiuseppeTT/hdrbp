@@ -30,6 +30,7 @@ from hdrbp.metric import (
     Volatility,
 )
 from hdrbp.weight import (
+    EqualRiskContribution,
     EqualWeight,
     MinimumCorrelation,
     MinimumVariance,
@@ -104,6 +105,7 @@ def define_backtester(estimation_size, holding_size, portfolio_size):
             ZeroCorrelation(),
         ],
         weight_optimizers=[
+            EqualRiskContribution(),
             EqualWeight(),
             MinimumCorrelation(),
             MinimumVariance(),
