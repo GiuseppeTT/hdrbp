@@ -86,9 +86,32 @@ class MinimumCorrelation(WeightOptimizer):
         return weights
 
 
+# TODO: find article that defines the QP formulation, or at least the lagrange of log
 class MostDiversified(WeightOptimizer):
+    # doi.org/10.3905/JPM.2008.35.1.40
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        # Minimize diversification_ratio = naive_volatility / volatility
+        # Subjected to weights >= 0 and sum(weights) = 1
+        # With naive_volatility = weights @ sqrt(diag(covariances))
+        # and volatility = sqrt(weights @ covariances @ weights)
+
+        logger.debug(f"{self}: Optimizing weights")
+
+        _, asset_count = covariances.shape
+        volatilities = extract_volatilities(covariances)
+
+        P = cvxopt.matrix(covariances)
+        q = cvxopt.matrix(0.0, (asset_count, 1))
+        G = cvxopt.matrix(-np.eye(asset_count))
+        h = cvxopt.matrix(0.0, (asset_count, 1))
+        A = cvxopt.matrix(volatilities).T
+        b = cvxopt.matrix(1.0)
+
+        solution = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
+        weights = extract_weights(solution)
+        weights = enforce_sum_one(weights)
+
+        return weights
 
 
 class HierarchicalWeightOptimizer(WeightOptimizer, ABC):
