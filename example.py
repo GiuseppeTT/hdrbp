@@ -67,7 +67,7 @@ def setup_logger():
         level=logging.DEBUG,
     )
 
-    numba_logger = logging.getLogger('numba')
+    numba_logger = logging.getLogger("numba")
     numba_logger.setLevel(logging.WARNING)
 
 
