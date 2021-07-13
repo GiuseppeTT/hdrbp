@@ -67,8 +67,7 @@ def setup_logger():
         level=logging.DEBUG,
     )
 
-    numba_logger = logging.getLogger("numba")
-    numba_logger.setLevel(logging.WARNING)
+    logging.getLogger("numba").setLevel(logging.INFO)
 
 
 def generate_returns(time_count, asset_count, seed=None):
