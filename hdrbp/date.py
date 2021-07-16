@@ -68,9 +68,9 @@ class TradingDate(DateRule):
 
 # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
 class CalendarDate(DateRule):
-    def __init__(self, estimation_size: int, holding_size: int, frequency: str = "D") -> None:
+    def __init__(self, estimation_size: int, holding_size: int, rebalance_scale: str = "D") -> None:
         super().__init__(estimation_size, holding_size)
-        self._frequency = frequency
+        self._rebalance_scale = rebalance_scale
 
     def _break_dates(self, dates):
-        return pd.date_range(dates.min(), dates.max(), freq=self._frequency)
+        return pd.date_range(dates.min(), dates.max(), freq=self._rebalance_scale)

@@ -14,7 +14,7 @@ from hdrbp.covariance import (
     SampleCovariance,
     ZeroCorrelation,
 )
-from hdrbp.date import TradingDate
+from hdrbp.date import CalendarDate
 from hdrbp.metric import (
     ExpectedShortfall,
     GeometricMeanReturn,
@@ -44,8 +44,9 @@ TIME_COUNT = 1000
 ASSET_COUNT = 10
 
 # Backtest
-ESTIMATION_SIZE = 100
-HOLDING_SIZE = 10
+ESTIMATION_SIZE = 12
+HOLDING_SIZE = 2
+REBALANCE_SCALE = "MS"
 PORTFOLIO_SIZE = 5
 
 
@@ -54,6 +55,7 @@ def main():
     returns = generate_returns(TIME_COUNT, ASSET_COUNT, SEED)
     backtester = define_backtester(ESTIMATION_SIZE, HOLDING_SIZE, PORTFOLIO_SIZE)
 
+    backtester = define_backtester(ESTIMATION_SIZE, HOLDING_SIZE, REBALANCE_SCALE, PORTFOLIO_SIZE)
     backtester.backtest(returns)
 
     print(backtester.metrics)
@@ -90,8 +92,9 @@ def generate_return_values(time_count, asset_count, seed):
     return return_values
 
 
-def define_backtester(estimation_size, holding_size, portfolio_size):
+def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_size):
     rolling_window = RollingWindow(
+        date_rule=CalendarDate(estimation_size, holding_size, rebalance_scale),
         date_rule=TradingDate(estimation_size, holding_size),
         asset_rule=ValidAsset(portfolio_size),
     )
