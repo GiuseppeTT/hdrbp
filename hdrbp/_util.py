@@ -108,6 +108,10 @@ def count_dates_per_year(dates: pd.DatetimeIndex) -> float:
     return dates_per_year
 
 
+def count_digits(number: int) -> int:
+    return int(np.floor(np.log10(number)))
+
+
 def count_years(dates: pd.DatetimeIndex) -> float:
     period_size = dates.max() - dates.min()
     year_size = np.timedelta64(1, "Y")

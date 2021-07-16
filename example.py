@@ -1,8 +1,5 @@
 import logging
 
-import numpy as np
-import pandas as pd
-
 from hdrbp import Backtester, RollingWindow, Strategy
 from hdrbp.asset import LiquidAsset
 from hdrbp.covariance import (
@@ -28,6 +25,13 @@ from hdrbp.metric import (
     SharpeRatio,
     ValueAtRisk,
     Volatility,
+)
+from hdrbp.simulation import (
+    contaminate,
+    generate_dates,
+    generate_returns,
+    generate_tickers,
+    generate_volumes,
 )
 from hdrbp.weight import (
     EqualRiskContribution,
@@ -57,12 +61,9 @@ PORTFOLIO_SIZE = 5
 def main():
     setup_logger()
 
-    returns = generate_returns(TIME_COUNT, ASSET_COUNT, SEED)
-    volumes = generate_volumes(TIME_COUNT, ASSET_COUNT, SEED)
-
-    returns = contaminate(returns, CONTAMINATION_RATIO, CONTAMINATION_SIZE, SEED)
-    volumes = contaminate(volumes, CONTAMINATION_RATIO, CONTAMINATION_SIZE, SEED)
-
+    returns, volumes = generate_data(
+        TIME_COUNT, ASSET_COUNT, CONTAMINATION_RATIO, CONTAMINATION_SIZE, SEED
+    )
     backtester = define_backtester(ESTIMATION_SIZE, HOLDING_SIZE, REBALANCE_SCALE, PORTFOLIO_SIZE)
     backtester.backtest(returns, covariates=volumes)
 
@@ -80,74 +81,17 @@ def setup_logger():
     logging.getLogger("numba").setLevel(logging.INFO)
 
 
-def generate_returns(time_count, asset_count, seed=None):
+def generate_data(time_count, asset_count, contamination_ratio, contamination_size, seed=None):
     dates = generate_dates(time_count)
     tickers = generate_tickers(asset_count)
-    return_values = generate_return_values(time_count, asset_count, seed)
 
-    returns = pd.DataFrame(return_values, index=dates, columns=tickers)
+    returns = generate_returns(dates, tickers, seed)
+    volumes = generate_volumes(dates, tickers, seed)
 
-    return returns
+    returns = contaminate(returns, contamination_ratio, contamination_size, seed)
+    volumes = contaminate(volumes, contamination_ratio, contamination_size, seed)
 
-
-def generate_return_values(time_count, asset_count, seed=None):
-    generator = np.random.default_rng(seed)
-    means = generator.uniform(0, 0.0001, size=asset_count)
-    raw_covariances = generator.uniform(0, 0.01, size=(asset_count, asset_count))
-    covariances = raw_covariances.T @ raw_covariances
-
-    return_values = generator.multivariate_normal(means, covariances, size=time_count)
-
-    return return_values
-
-
-def generate_volumes(time_count, asset_count, seed=None):
-    dates = generate_dates(time_count)
-    tickers = generate_tickers(asset_count)
-    volume_values = generate_volume_values(time_count, asset_count, seed)
-
-    volumes = pd.DataFrame(volume_values, index=dates, columns=tickers)
-
-    return volumes
-
-
-def generate_volume_values(time_count, asset_count, seed=None):
-    generator = np.random.default_rng(seed)
-    means = generator.uniform(1, 10, size=asset_count)
-    covariances = np.diag(np.sqrt(means))
-
-    volume_values = np.exp(generator.multivariate_normal(means, covariances, size=time_count))
-
-    return volume_values
-
-
-def generate_dates(time_count):
-    return pd.date_range("01/01/2021", periods=time_count, freq="B")
-
-
-def generate_tickers(asset_count):
-    return [f"T{i}" for i in range(asset_count)]
-
-
-def contaminate(data, ratio, size, seed=None):
-    data = data.copy()
-    values = data.values
-
-    time_count, asset_count = values.shape
-    period_count = time_count // size
-    nan_time_count = size * period_count
-    nan_asset_count = int(ratio * asset_count)
-
-    times = np.arange(nan_time_count).reshape(-1, 1)
-    times = np.repeat(times, repeats=nan_asset_count, axis=1)
-
-    generator = np.random.default_rng(seed)
-    assets = generator.choice(asset_count, size=(period_count, nan_asset_count))
-    assets = np.repeat(assets, repeats=size, axis=0)
-
-    values[times, assets] = np.nan
-
-    return data
+    return returns, volumes
 
 
 def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_size):
