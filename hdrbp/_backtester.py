@@ -29,8 +29,8 @@ class Backtester:
         self._results: Optional[pd.DataFrame] = None
         self._metrics: Optional[pd.DataFrame] = None
 
-    def backtest(self, returns: pd.DataFrame) -> None:
-        steps = self._backtest(returns)
+    def backtest(self, returns: pd.DataFrame, covariates: Optional[pd.DataFrame] = None) -> None:
+        steps = self._backtest(returns, covariates)
         results = self._parse_steps(steps)
         metrics = self._calculate_metrics(results)
 
@@ -38,7 +38,7 @@ class Backtester:
         self._results = results
         self._metrics = metrics
 
-    def _backtest(self, returns):
+    def _backtest(self, returns, covariates):
         logger.info(f"{self}: Backtesting")
 
         steps = []
@@ -46,7 +46,7 @@ class Backtester:
         for index in range(possible_step_count):
             logger.info(f"{self}: Backtesting step {index}/{possible_step_count-1}")
 
-            data = self._rolling_window.extract_data(index, returns)
+            data = self._rolling_window.extract_data(index, returns, covariates)
             results = self._backtest_strategies(data)
             step = Step(index, data, results)
 

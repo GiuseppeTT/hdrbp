@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -30,6 +31,7 @@ class StepEstimationData:
     dates: pd.DatetimeIndex
     assets: pd.Index
     returns: np.ndarray
+    covariates: Optional[np.ndarray] = None
 
 
 @dataclass
@@ -37,6 +39,7 @@ class StepHoldingData:
     dates: pd.DatetimeIndex
     assets: pd.Index
     returns: np.ndarray
+    covariates: Optional[np.ndarray] = None
 
 
 @dataclass
