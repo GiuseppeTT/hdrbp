@@ -11,8 +11,8 @@ from hdrbp._util import (
     demean,
     enforce_sum_one,
     extract_correlations,
+    extract_standard_deviations,
     extract_upper_elements,
-    extract_volatilities,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class ZeroCorrelation(CovarianceEstimator):
 class EqualCorrelation(CovarianceEstimator):
     def _demeaned_estimate(self, returns):
         sample_covariances = SampleCovariance().estimate(returns, is_demeaned=True)
-        sample_volatilities = extract_volatilities(sample_covariances)
+        sample_volatilities = extract_standard_deviations(sample_covariances)
         sample_correlations = extract_correlations(sample_covariances)
 
         volatilities = sample_volatilities

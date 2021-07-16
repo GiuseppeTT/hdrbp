@@ -49,8 +49,8 @@ def basic_str(cls: type) -> type:
     return cls
 
 
-def build_covariances(volatilities: np.ndarray, correlations: np.ndarray) -> np.ndarray:
-    return correlations * volatilities[:, np.newaxis] * volatilities[np.newaxis, :]
+def build_covariances(standard_deviations: np.ndarray, correlations: np.ndarray) -> np.ndarray:
+    return correlations * standard_deviations[:, np.newaxis] * standard_deviations[np.newaxis, :]
 
 
 def compute_correlation(covariances: np.ndarray, weights: np.ndarray) -> float:
@@ -61,7 +61,7 @@ def compute_correlation(covariances: np.ndarray, weights: np.ndarray) -> float:
 
 
 def compute_diversification_ratio(covariances: np.ndarray, weights: np.ndarray) -> float:
-    volatilities = extract_volatilities(covariances)
+    volatilities = extract_standard_deviations(covariances)
     naive_volatility = weights @ volatilities
     volatility = np.sqrt(weights @ covariances @ weights)
 
@@ -130,9 +130,11 @@ def enforce_sum_one(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
 
 
 def extract_correlations(covariances: np.ndarray) -> np.ndarray:
-    volatilities = extract_volatilities(covariances)
+    standard_deviations = extract_standard_deviations(covariances)
 
-    correlations = covariances / volatilities[:, np.newaxis] / volatilities[np.newaxis, :]
+    correlations = (
+        covariances / standard_deviations[:, np.newaxis] / standard_deviations[np.newaxis, :]
+    )
     correlations = np.clip(correlations, -1, 1)
 
     return correlations
@@ -145,7 +147,7 @@ def extract_upper_elements(array: np.ndarray) -> np.ndarray:
     return upper_elements
 
 
-def extract_volatilities(covariances: np.ndarray) -> np.ndarray:
+def extract_standard_deviations(covariances: np.ndarray) -> np.ndarray:
     return np.sqrt(np.diag(covariances))
 
 

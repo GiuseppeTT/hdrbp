@@ -12,7 +12,7 @@ from hdrbp._util import (
     basic_str,
     enforce_sum_one,
     extract_correlations,
-    extract_volatilities,
+    extract_standard_deviations,
     extract_weights,
 )
 
@@ -150,7 +150,7 @@ class NaiveEqualRiskContribution(WeightOptimizer):
     def optimize(self, covariances: np.ndarray) -> np.ndarray:
         logger.debug(f"{self}: Optimizing weights")
 
-        volatilities = extract_volatilities(covariances)
+        volatilities = extract_standard_deviations(covariances)
         weights = enforce_sum_one(1 / volatilities)
 
         return weights
@@ -203,7 +203,7 @@ class MostDiversified(WeightOptimizer):
         logger.debug(f"{self}: Optimizing weights")
 
         _, asset_count = covariances.shape
-        volatilities = extract_volatilities(covariances)
+        volatilities = extract_standard_deviations(covariances)
 
         P = cvxopt.matrix(covariances)
         q = cvxopt.matrix(0.0, (asset_count, 1))
