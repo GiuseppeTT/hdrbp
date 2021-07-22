@@ -30,7 +30,7 @@ from hdrbp.simulation import (
     contaminate,
     generate_dates,
     generate_returns,
-    generate_tickers,
+    generate_assets,
     generate_volumes,
 )
 from hdrbp.weight import (
@@ -54,7 +54,7 @@ CONTAMINATION_SIZE = 100
 # Backtest
 ESTIMATION_SIZE = 12
 HOLDING_SIZE = 2
-REBALANCE_SCALE = "MS"
+REBALANCE_SCALE = "MS"  # Month start
 PORTFOLIO_SIZE = 5
 
 
@@ -83,10 +83,10 @@ def setup_logger():
 
 def generate_data(time_count, asset_count, contamination_ratio, contamination_size, seed=None):
     dates = generate_dates(time_count)
-    tickers = generate_tickers(asset_count)
+    assets = generate_assets(asset_count)
 
-    returns = generate_returns(dates, tickers, seed)
-    volumes = generate_volumes(dates, tickers, seed)
+    returns = generate_returns(dates, assets, seed)
+    volumes = generate_volumes(dates, assets, seed)
 
     returns = contaminate(returns, contamination_ratio, contamination_size, seed)
     volumes = contaminate(volumes, contamination_ratio, contamination_size, seed)

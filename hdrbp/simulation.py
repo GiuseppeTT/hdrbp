@@ -20,26 +20,26 @@ def generate_dates(
     return pd.date_range(start_date, periods=time_count, freq=frequency)
 
 
-def generate_tickers(asset_count: int) -> pd.Index:
-    logger.debug("Simulation: Generating tickers")
+def generate_assets(asset_count: int) -> pd.Index:
+    logger.debug("Simulation: Generating assets")
 
     digit_count = count_digits(asset_count)
 
-    return pd.Index(f"T{asset:0{digit_count}}" for asset in range(asset_count))
+    return pd.Index(f"A{asset:0{digit_count}}" for asset in range(asset_count))
 
 
 def generate_returns(
     dates: pd.DatetimeIndex,
-    tickers: pd.Index,
+    assets: pd.Index,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     logger.debug("Simulation: Generating returns")
 
     time_count = dates.size
-    asset_count = tickers.size
+    asset_count = assets.size
     return_values = _generate_return_values(time_count, asset_count, seed)
 
-    returns = pd.DataFrame(return_values, index=dates, columns=tickers)
+    returns = pd.DataFrame(return_values, index=dates, columns=assets)
 
     return returns
 
@@ -60,16 +60,16 @@ def _generate_return_values(time_count, asset_count, seed=None):
 
 def generate_volumes(
     dates: pd.DatetimeIndex,
-    tickers: pd.Index,
+    assets: pd.Index,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     logger.debug("Simulation: Generating volumes")
 
     time_count = dates.size
-    asset_count = tickers.size
+    asset_count = assets.size
     volume_values = _generate_volume_values(time_count, asset_count, seed)
 
-    volumes = pd.DataFrame(volume_values, index=dates, columns=tickers)
+    volumes = pd.DataFrame(volume_values, index=dates, columns=assets)
 
     return volumes
 
