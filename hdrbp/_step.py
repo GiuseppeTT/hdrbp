@@ -42,6 +42,7 @@ class StepHoldingData:
     covariates: Optional[np.ndarray] = None
 
 
+# TODO: move estimator and optimizer to here? Maybe not possible/useful
 @dataclass
 class StepResult:
     estimation: StepEstimationResult
