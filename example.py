@@ -6,8 +6,8 @@ from hdrbp.covariance import (
     EqualCorrelation,
     EqualVariance,
     LinearShrinkage,
-    RiskMetrics1994,
-    RiskMetrics2006,
+    ExponentialWeighted,
+    ExponentialWeightedMixture,
     SampleCovariance,
     ZeroCorrelation,
 )
@@ -104,9 +104,9 @@ def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_
         covariance_estimators=[
             EqualCorrelation(),
             EqualVariance(),
+            ExponentialWeighted(),
+            ExponentialWeightedMixture(),
             LinearShrinkage(),
-            RiskMetrics1994(),
-            RiskMetrics2006(),
             SampleCovariance(),
             ZeroCorrelation(),
         ],

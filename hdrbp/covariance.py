@@ -95,8 +95,8 @@ class SampleCovariance(CovarianceEstimator):
         return covariances
 
 
-class RiskMetrics1994(CovarianceEstimator):
-    # RiskMetrics - Technical Document
+class ExponentialWeighted(CovarianceEstimator):
+    # The RiskMetrics 1994 methodology
     def __init__(self) -> None:
         self._smooth = 0.94
 
@@ -104,7 +104,8 @@ class RiskMetrics1994(CovarianceEstimator):
         return _apply_ewma(returns, self._smooth)
 
 
-class RiskMetrics2006(CovarianceEstimator):
+# TODO: rename to MixtureExponentialWeighted
+class ExponentialWeightedMixture(CovarianceEstimator):
     # The RiskMetrics 2006 methodology
     def __init__(self) -> None:
         # https://en.wikipedia.org/wiki/Exponential_decay
@@ -123,22 +124,22 @@ class RiskMetrics2006(CovarianceEstimator):
         self._mixture_weights = mixture_weights
 
     def _demeaned_estimate(self, returns):
-        return _apply_mixture_ewma(returns, self._smooths, self._mixture_weights)
+        return _apply_ewma_mixture(returns, self._smooths, self._mixture_weights)
 
 
 # TODO: Move comments to RiskMetrics1994 documentation
-def _apply_mixture_ewma(
+def _apply_ewma_mixture(
     returns: np.ndarray,
     smooths: np.ndarray,
     mixture_weights: np.ndarray,
 ) -> np.ndarray:
-    # mixture_ewma[:, :, time + 1] = (
+    # ewma_mixture[:, :, time + 1] = (
     #     mixture_weights[0] * ewma[:, :, time + 1, 0]
     #     + ...
     #     + mixture_weights[ewma_count - 1] * ewma[:, :, time + 1, ewma_count - 1]
     # )
     #
-    # mixture_ewma[:, :, time + 1] = (
+    # ewma_mixture[:, :, time + 1] = (
     #     weights[0] * returns[0, :] @ returns[0, :].T
     #     + ...
     #     + weights[time] * returns[time, :] @ returns[time, :].T
@@ -161,9 +162,9 @@ def _apply_mixture_ewma(
     weights = np.einsum("ij, j -> i", ewma_weights, mixture_weights)
 
     returns = returns[-term_count:, :]
-    mixture_ewma = np.einsum("ki, kj, k -> ij", returns, returns, weights)
+    ewma_mixture = np.einsum("ki, kj, k -> ij", returns, returns, weights)
 
-    return mixture_ewma
+    return ewma_mixture
 
 
 # TODO: Move comments to RiskMetrics1994 documentation
