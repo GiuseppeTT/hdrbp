@@ -86,7 +86,7 @@ class TopAsset(AssetRule):
         valid_covariates = covariates.loc[:, valid_assets]
         summarized_covariates = valid_covariates.apply(self._summarizer, axis="rows")
         asset_ids = np.argsort(summarized_covariates.values)
-        asset_ids = asset_ids[-size:]
+        asset_ids = asset_ids[-size:]  # pylint: disable=invalid-unary-operand-type
         asset_ids = np.sort(asset_ids)
 
         assets = valid_assets[asset_ids]
