@@ -1,13 +1,13 @@
 import logging
 
 from hdrbp import Backtester, RollingWindow, Strategy
-from hdrbp.asset import LiquidAsset
+from hdrbp.asset import TopAsset
 from hdrbp.covariance import (
     EqualCorrelation,
     EqualVariance,
-    LinearShrinkage,
     ExponentialWeighted,
     ExponentialWeightedMixture,
+    LinearShrinkage,
     SampleCovariance,
     ZeroCorrelation,
 )
@@ -28,9 +28,9 @@ from hdrbp.metric import (
 )
 from hdrbp.simulation import (
     contaminate,
+    generate_assets,
     generate_dates,
     generate_returns,
-    generate_assets,
     generate_volumes,
 )
 from hdrbp.weight import (
@@ -97,7 +97,7 @@ def generate_data(time_count, asset_count, contamination_ratio, contamination_si
 def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_size):
     rolling_window = RollingWindow(
         date_rule=CalendarDate(estimation_size, holding_size, rebalance_scale),
-        asset_rule=LiquidAsset(portfolio_size),
+        asset_rule=TopAsset(portfolio_size),
     )
 
     strategies = Strategy.from_product(
