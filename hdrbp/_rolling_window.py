@@ -11,6 +11,7 @@ from hdrbp.date import DateRule
 logger = logging.getLogger(__name__)
 
 
+# TODO: unify extract, filter and select methods into, maybe, extract?
 @basic_str
 @basic_repr
 class RollingWindow:
