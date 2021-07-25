@@ -12,8 +12,8 @@ from hdrbp._util import (
     basic_str,
     enforce_sum_one,
     extract_correlations,
+    extract_solution,
     extract_standard_deviations,
-    extract_weights,
 )
 
 logger = logging.getLogger(__name__)
@@ -172,8 +172,8 @@ class MinimumVariance(WeightOptimizer):
         A = cvxopt.matrix(1.0, (1, asset_count))
         b = cvxopt.matrix(1.0)
 
-        solution = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
-        weights = extract_weights(solution)
+        optimization_results = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
+        weights = extract_solution(optimization_results)
 
         return weights
 
@@ -212,8 +212,9 @@ class MostDiversified(WeightOptimizer):
         A = cvxopt.matrix(volatilities).T
         b = cvxopt.matrix(1.0)
 
-        solution = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
-        weights = extract_weights(solution)
+        # By the optimization design, the solution is not guaranteed to sum to one
+        optimization_results = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
+        weights = extract_solution(optimization_results)
         weights = enforce_sum_one(weights)
 
         return weights

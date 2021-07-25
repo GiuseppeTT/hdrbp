@@ -147,13 +147,13 @@ def extract_upper_elements(array: np.ndarray) -> np.ndarray:
     return upper_elements
 
 
-def extract_standard_deviations(covariances: np.ndarray) -> np.ndarray:
-    return np.sqrt(np.diag(covariances))
-
-
-def extract_weights(results: dict) -> np.ndarray:
-    solution = results["x"]
+def extract_solution(optimization_results: dict) -> np.ndarray:
+    solution = optimization_results["x"]
     solution = np.array(solution)
     solution = solution.flatten()
 
     return solution
+
+
+def extract_standard_deviations(covariances: np.ndarray) -> np.ndarray:
+    return np.sqrt(np.diag(covariances))
