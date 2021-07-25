@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import Optional, Union
 
 import numpy as np
 
@@ -97,8 +98,8 @@ class SampleCovariance(CovarianceEstimator):
 
 class ExponentialWeighted(CovarianceEstimator):
     # The RiskMetrics 1994 methodology
-    def __init__(self) -> None:
-        self._smooth = 0.94
+    def __init__(self, smooth: float = 0.94) -> None:
+        self._smooth = smooth
 
     def _demeaned_estimate(self, returns):
         return _apply_ewma(returns, self._smooth)
@@ -107,18 +108,25 @@ class ExponentialWeighted(CovarianceEstimator):
 # TODO: rename to MixtureExponentialWeighted
 class ExponentialWeightedMixture(CovarianceEstimator):
     # The RiskMetrics 2006 methodology
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        smooths: Optional[np.ndarray] = None,
+        mixture_weights: Optional[np.ndarray] = None,
+    ) -> None:
         # https://en.wikipedia.org/wiki/Exponential_decay
 
-        self._min_mean_lifetime = 4
-        self._mean_lifetime_ratio = np.sqrt(2)
-        self._mean_lifetime_count = 14
-        self._mixture_decay = 1560
+        if smooths is None and mixture_weights is None:
+            min_mean_lifetime = 4
+            mean_lifetime_ratio = np.sqrt(2)
+            mean_lifetime_count = 14
+            mixture_decay = 1560
 
-        exponents = np.arange(self._mean_lifetime_count)
-        mean_lifetimes = self._min_mean_lifetime * self._mean_lifetime_ratio ** exponents
-        smooths = np.exp(-1 / mean_lifetimes)
-        mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(self._mixture_decay))
+            exponents = np.arange(mean_lifetime_count)
+            mean_lifetimes = min_mean_lifetime * mean_lifetime_ratio ** exponents
+            smooths = np.exp(-1 / mean_lifetimes)
+            mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(mixture_decay))
+        elif (smooths is None) ^ (mixture_weights is None):
+            raise ValueError("Must provide both or none of smooths and mixture_weights")
 
         self._smooths = smooths
         self._mixture_weights = mixture_weights
@@ -153,15 +161,15 @@ def _apply_ewma_mixture(
 
     time_count, _ = returns.shape
 
-    max_smooth = np.max(smooths)
-    term_count = _count_ewma_terms(max_smooth, max_count=time_count)
-    times = np.arange(term_count)
+    term_counts = _count_ewma_terms(smooths, max_count=time_count)
+    max_term_count = max(term_counts)
+    times = np.arange(max_term_count)
     times = times[:, np.newaxis]
 
     ewma_weights = enforce_sum_one(smooths ** (time_count - times), axis=0)
     weights = np.einsum("ij, j -> i", ewma_weights, mixture_weights)
 
-    returns = returns[-term_count:, :]
+    returns = returns[-max_term_count:, :]
     ewma_mixture = np.einsum("ki, kj, k -> ij", returns, returns, weights)
 
     return ewma_mixture
@@ -194,12 +202,13 @@ def _apply_ewma(returns: np.ndarray, smooth: float) -> np.ndarray:
     return ewma
 
 
+# TODO: vectorize so can take max(ewma_terms) in ewma_mixture
 # TODO: Move comments to RiskMetrics1994 documentation
 def _count_ewma_terms(
-    smooth: float,
+    smooths: Union[float, np.ndarray],
     max_count: float = np.inf,
     error_tolerance: float = ERROR_TOLERANCE,
-) -> int:
+) -> np.ndarray:
     # weight[index] = (1 - smooth) * smooth ** index
     #
     # weights[0] + ... weights[term_count - 1] = 1 - smooth ** term_count
@@ -210,12 +219,12 @@ def _count_ewma_terms(
     #
     # term_count = ceil( log(error_tolerance) / log(smooth) )
 
-    term_count = np.log(error_tolerance) / np.log(smooth)
-    term_count = np.ceil(term_count)
-    term_count = min(term_count, max_count)
-    term_count = int(term_count)
+    term_counts = np.log(error_tolerance) / np.log(smooths)
+    term_counts = np.clip(term_counts, a_min=None, a_max=max_count)
+    term_counts = np.ceil(term_counts)
+    term_counts = term_counts.astype(int)
 
-    return term_count
+    return term_counts
 
 
 class LinearShrinkage(CovarianceEstimator):
@@ -231,6 +240,7 @@ class LinearShrinkage(CovarianceEstimator):
 
 
 # TODO: find better names for d_squared and b_squared
+# Maybe this only works for target covariance estimator = EqualVariance
 def _estimate_shrinkage(returns, sample_covariances, target_covariances):
     d_squared = _compute_squared_norm(sample_covariances - target_covariances)
 
