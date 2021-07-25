@@ -81,8 +81,8 @@ def _parse_steps(steps):
     for step in steps:
         index = step.index
         data = step.data
-
         logger.info(f"Step: Parsing step {index}")
+
         for result in step.results:
             covariance_estimator = result.estimation.covariance_estimator
             weight_optimizer = result.estimation.weight_optimizer
@@ -114,7 +114,7 @@ def _parse_step_estimation(index, data, result):
 
 
 def _parse_step_holding(index, data, result):
-    date_count = len(data.dates)
+    date_count = data.dates.size
     parse = {
         "covariance_estimator": date_count * [repr(result.covariance_estimator)],
         "weight_optimizer": date_count * [repr(result.weight_optimizer)],
