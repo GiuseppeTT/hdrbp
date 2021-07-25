@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 @basic_repr
 class Strategy:
     def __init__(
-        self, covariance_estimator: CovarianceEstimator, weight_optimizer: WeightOptimizer
+        self,
+        covariance_estimator: CovarianceEstimator,
+        weight_optimizer: WeightOptimizer,
     ) -> None:
         self._covariance_estimator = covariance_estimator
         self._weight_optimizer = weight_optimizer
@@ -66,7 +68,7 @@ class Strategy:
         return result
 
     def _backtest_holding(self, data, rebalance_weights):
-        weights, returns = self._propagate_weights(rebalance_weights, data.returns)
+        weights, returns = _propagate_weights(rebalance_weights, data.returns)
 
         result = StepHoldingResult(
             self._covariance_estimator,
@@ -77,18 +79,18 @@ class Strategy:
 
         return result
 
-    @staticmethod
-    def _propagate_weights(rebalance_weights, asset_returns):
-        asset_returns = np.nan_to_num(asset_returns)
-        current_weights = rebalance_weights
 
-        returns = []
-        weights = []
-        for current_asset_returns in asset_returns:
-            current_return = current_weights @ current_asset_returns
-            current_weights = enforce_sum_one(current_weights * (1 + current_asset_returns))
+def _propagate_weights(rebalance_weights, asset_returns):
+    asset_returns = np.nan_to_num(asset_returns)  # Holding data may have nans
+    current_weights = rebalance_weights
 
-            returns.append(current_return)
-            weights.append(current_weights)
+    returns = []
+    weights = []
+    for current_asset_returns in asset_returns:
+        current_return = current_weights @ current_asset_returns
+        current_weights = enforce_sum_one(current_weights * (1 + current_asset_returns))
 
-        return weights, np.array(returns)
+        returns.append(current_return)
+        weights.append(current_weights)
+
+    return weights, np.array(returns)
