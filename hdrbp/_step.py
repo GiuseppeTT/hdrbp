@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -30,6 +31,7 @@ class StepEstimationData:
     dates: pd.DatetimeIndex
     assets: pd.Index
     returns: np.ndarray
+    covariates: Optional[np.ndarray] = None
 
 
 @dataclass
@@ -37,6 +39,7 @@ class StepHoldingData:
     dates: pd.DatetimeIndex
     assets: pd.Index
     returns: np.ndarray
+    covariates: Optional[np.ndarray] = None
 
 
 @dataclass
@@ -77,7 +80,13 @@ def _parse_steps(steps):
     for step in steps:
         index = step.index
         data = step.data
+        logger.info(f"Step: Parsing step {index}")
+
         for result in step.results:
+            covariance_estimator = result.estimation.covariance_estimator
+            weight_optimizer = result.estimation.weight_optimizer
+            logger.debug(f"Step: Parsing result {covariance_estimator=} and {weight_optimizer=}")
+
             estimation_parse = _parse_step_estimation(index, data.estimation, result.estimation)
             holding_parse = _parse_step_holding(index, data.holding, result.holding)
 
@@ -104,7 +113,7 @@ def _parse_step_estimation(index, data, result):
 
 
 def _parse_step_holding(index, data, result):
-    date_count = len(data.dates)
+    date_count = data.dates.size
     parse = {
         "covariance_estimator": date_count * [repr(result.covariance_estimator)],
         "weight_optimizer": date_count * [repr(result.weight_optimizer)],
@@ -127,6 +136,9 @@ def _join_results(results):
     # concatenated and the automatic NaN dropping. Its current effect is
     # merging those duplicated groups so that the joined parsed results makes
     # sense.
+
+    logger.debug("Step: Joining parsed results")
+
     results = pd.concat(results)
     results = (
         results.groupby(["covariance_estimator", "weight_optimizer", "date"]).last().reset_index()
@@ -136,6 +148,8 @@ def _join_results(results):
 
 
 def _rearrange_results(results):
+    logger.debug("Step: Rearranging joined results")
+
     results["assets"] = results.agg(_add_assets, axis="columns")
     results["before_rebalance_assets"] = results.agg(_add_before_rebalance_assets, axis="columns")
     results["weights"] = results.agg(_add_weights, axis="columns")

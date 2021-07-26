@@ -7,7 +7,7 @@ from hdrbp._rolling_window import RollingWindow
 from hdrbp._step import Step, parse_steps
 from hdrbp._strategy import Strategy
 from hdrbp._util import basic_repr, basic_str
-from hdrbp.metric import MetricCalculator
+from hdrbp.metric import MetricCalculator, calculate_group_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ class Backtester:
         self._results: Optional[pd.DataFrame] = None
         self._metrics: Optional[pd.DataFrame] = None
 
-    def backtest(self, returns: pd.DataFrame) -> None:
-        steps = self._backtest(returns)
+    def backtest(self, returns: pd.DataFrame, covariates: Optional[pd.DataFrame] = None) -> None:
+        steps = self._backtest(returns, covariates)
         results = self._parse_steps(steps)
         metrics = self._calculate_metrics(results)
 
@@ -38,7 +38,7 @@ class Backtester:
         self._results = results
         self._metrics = metrics
 
-    def _backtest(self, returns):
+    def _backtest(self, returns, covariates):
         logger.info(f"{self}: Backtesting")
 
         steps = []
@@ -46,7 +46,7 @@ class Backtester:
         for index in range(possible_step_count):
             logger.info(f"{self}: Backtesting step {index}/{possible_step_count-1}")
 
-            data = self._rolling_window.extract_data(index, returns)
+            data = self._rolling_window.extract_data(index, returns, covariates)
             results = self._backtest_strategies(data)
             step = Step(index, data, results)
 
@@ -82,20 +82,9 @@ class Backtester:
 
         metrics = (
             results.groupby(["covariance_estimator", "weight_optimizer"])
-            .apply(self._calculate_group_metrics, self._metric_calculators)
+            .apply(calculate_group_metrics, self._metric_calculators)
             .reset_index()
         )
-
-        return metrics
-
-    @staticmethod
-    def _calculate_group_metrics(results, calculators):
-        metrics = {}
-        for calculator in calculators:
-            metric = calculator.calculate(results)
-            metrics.update(metric)
-
-        metrics = pd.Series(metrics)
 
         return metrics
 

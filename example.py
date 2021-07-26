@@ -1,79 +1,140 @@
 import logging
 
-import pandas as pd
-from numpy.random import default_rng
-
 from hdrbp import Backtester, RollingWindow, Strategy
-from hdrbp.asset import ValidAsset
-from hdrbp.covariance import SampleCovariance
-from hdrbp.date import TradingDate
-from hdrbp.metric import MeanReturn
-from hdrbp.weight import InverseVolatility
+from hdrbp.asset import TopAsset
+from hdrbp.covariance import (
+    EqualCorrelation,
+    EqualVariance,
+    ExponentialWeighted,
+    ExponentialWeightedMixture,
+    LinearShrinkage,
+    SampleCovariance,
+    ZeroCorrelation,
+)
+from hdrbp.date import CalendarDate
+from hdrbp.metric import (
+    ExpectedShortfall,
+    GeometricMeanReturn,
+    MaxDrawdown,
+    MeanCorrelation,
+    MeanDiversificationRatio,
+    MeanReturn,
+    MeanRiskContributionGini,
+    MeanTurnover,
+    MeanVariance,
+    MeanWeightGini,
+    SharpeRatio,
+    ValueAtRisk,
+    Volatility,
+)
+from hdrbp.simulation import (
+    contaminate,
+    generate_assets,
+    generate_dates,
+    generate_returns,
+    generate_volumes,
+)
+from hdrbp.weight import (
+    EqualRiskContribution,
+    EqualWeight,
+    MinimumCorrelation,
+    MinimumVariance,
+    MostDiversified,
+    NaiveEqualRiskContribution,
+)
 
-# Return generation
+# Data generation
 SEED = 42
-TIME_COUNT = 1000
+TIME_COUNT = 1_000
 ASSET_COUNT = 10
 
-# Backtest
-ESTIMATION_SIZE = 100
-HOLDING_SIZE = 10
-PORTFOLIO_SIZE = 5
+# Contamination
+CONTAMINATION_RATIO = 0.1
+CONTAMINATION_SIZE = 100
 
-logging.basicConfig(
-    format="[{asctime}] [{levelname:<8}] {message}",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    style="{",
-    level=logging.DEBUG,
-)
+# Backtest
+ESTIMATION_SIZE = 12
+HOLDING_SIZE = 2
+REBALANCE_SCALE = "MS"  # Month start
+PORTFOLIO_SIZE = 5
 
 
 def main():
-    returns = generate_returns()
-    backtester = define_backtester()
+    setup_logger()
 
-    backtester.backtest(returns)
+    returns, volumes = generate_data(
+        TIME_COUNT, ASSET_COUNT, CONTAMINATION_RATIO, CONTAMINATION_SIZE, SEED
+    )
+    backtester = define_backtester(ESTIMATION_SIZE, HOLDING_SIZE, REBALANCE_SCALE, PORTFOLIO_SIZE)
+    backtester.backtest(returns, covariates=volumes)
 
     print(backtester.metrics)
 
 
-def generate_returns():
-    dates = pd.date_range("01/01/2021", periods=TIME_COUNT, freq="B")
-    tickers = [str(i) for i in range(ASSET_COUNT)]
-    return_values = generate_return_values()
+def setup_logger():
+    logging.basicConfig(
+        format="[{asctime}] [{levelname:<8}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        style="{",
+        level=logging.DEBUG,
+    )
 
-    returns = pd.DataFrame(return_values, index=dates, columns=tickers)
-
-    return returns
-
-
-def generate_return_values():
-    generator = default_rng(seed=SEED)
-    means = generator.uniform(0, 0.0001, size=ASSET_COUNT)
-    raw_covariances = generator.uniform(0, 0.01, size=(ASSET_COUNT, ASSET_COUNT))
-    covariances = raw_covariances.T @ raw_covariances
-    return_values = generator.multivariate_normal(means, covariances, size=TIME_COUNT)
-
-    return return_values
+    logging.getLogger("numba").setLevel(logging.INFO)
 
 
-def define_backtester():
+def generate_data(time_count, asset_count, contamination_ratio, contamination_size, seed=None):
+    dates = generate_dates(time_count)
+    assets = generate_assets(asset_count)
+
+    returns = generate_returns(dates, assets, seed)
+    volumes = generate_volumes(dates, assets, seed)
+
+    returns = contaminate(returns, contamination_ratio, contamination_size, seed)
+    volumes = contaminate(volumes, contamination_ratio, contamination_size, seed)
+
+    return returns, volumes
+
+
+def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_size):
     rolling_window = RollingWindow(
-        date_rule=TradingDate(estimation_size=ESTIMATION_SIZE, holding_size=HOLDING_SIZE),
-        asset_rule=ValidAsset(size=PORTFOLIO_SIZE),
+        date_rule=CalendarDate(estimation_size, holding_size, rebalance_scale),
+        asset_rule=TopAsset(portfolio_size),
     )
 
     strategies = Strategy.from_product(
         covariance_estimators=[
+            EqualCorrelation(),
+            EqualVariance(),
+            ExponentialWeighted(),
+            ExponentialWeightedMixture(),
+            LinearShrinkage(),
             SampleCovariance(),
+            ZeroCorrelation(),
         ],
         weight_optimizers=[
-            InverseVolatility(),
+            EqualRiskContribution(),
+            EqualWeight(),
+            MinimumCorrelation(),
+            MinimumVariance(),
+            MostDiversified(),
+            NaiveEqualRiskContribution(),
         ],
     )
 
     metric_calculators = [
+        ExpectedShortfall(),
+        GeometricMeanReturn(),
+        MaxDrawdown(),
+        MeanCorrelation(),
+        MeanDiversificationRatio(),
         MeanReturn(),
+        MeanRiskContributionGini(),
+        MeanTurnover(),
+        MeanVariance(),
+        MeanWeightGini(),
+        SharpeRatio(),
+        ValueAtRisk(),
+        Volatility(),
     ]
 
     backtester = Backtester(rolling_window, strategies, metric_calculators)

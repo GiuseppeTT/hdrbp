@@ -16,11 +16,9 @@ class DateRule(ABC):
         self._holding_size = holding_size
 
     def count_possible_steps(self, dates: pd.DatetimeIndex) -> int:
-        # Basically an inversion of "start formula" in extract_holding_dates method
+        # Basically an inversion of "start formula" in filter_holding_dates method
         break_dates = self._break_dates(dates)
-        valid_count = break_dates.size
-        no_overhead_count = valid_count - self._estimation_size
-        possible_count = no_overhead_count // self._holding_size
+        possible_count = (break_dates.size - self._estimation_size) // self._holding_size
 
         return possible_count
 
@@ -66,3 +64,13 @@ class DateRule(ABC):
 class TradingDate(DateRule):
     def _break_dates(self, dates):
         return dates
+
+
+# https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
+class CalendarDate(DateRule):
+    def __init__(self, estimation_size: int, holding_size: int, rebalance_scale: str = "D") -> None:
+        super().__init__(estimation_size, holding_size)
+        self._rebalance_scale = rebalance_scale
+
+    def _break_dates(self, dates):
+        return pd.date_range(dates.min(), dates.max(), freq=self._rebalance_scale)
