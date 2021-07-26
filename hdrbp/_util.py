@@ -95,6 +95,26 @@ def compute_risk_contributions(covariances: np.ndarray, weights: np.ndarray) -> 
     return risk_contributions
 
 
+def compute_turnover(
+    before_rebalance_assets: pd.Index,
+    before_rebalance_weights: np.ndarray,
+    rebalance_assets: pd.Index,
+    rebalance_weights: np.ndarray,
+) -> float:
+    before_rebalance_weights = pd.Series(before_rebalance_weights, before_rebalance_assets)
+    rebalance_weights = pd.Series(rebalance_weights, rebalance_assets)
+
+    all_assets = before_rebalance_assets.union(rebalance_assets)
+    before_rebalance_weights = before_rebalance_weights.reindex(  # type: ignore
+        all_assets, fill_value=0
+    )
+    rebalance_weights = rebalance_weights.reindex(all_assets, fill_value=0)  # type: ignore
+
+    turnover = np.sum(np.abs(rebalance_weights - before_rebalance_weights))
+
+    return turnover
+
+
 def compute_variance(covariances: np.ndarray, weights: np.ndarray) -> float:
     return weights @ covariances @ weights
 
@@ -140,13 +160,6 @@ def extract_correlations(covariances: np.ndarray) -> np.ndarray:
     return correlations
 
 
-def extract_upper_elements(array: np.ndarray) -> np.ndarray:
-    upper_element_indices = np.triu_indices_from(array, 1)
-    upper_elements = array[upper_element_indices]
-
-    return upper_elements
-
-
 def extract_solution(optimization_results: dict) -> np.ndarray:
     solution = optimization_results["x"]
     solution = np.array(solution)
@@ -157,3 +170,10 @@ def extract_solution(optimization_results: dict) -> np.ndarray:
 
 def extract_standard_deviations(covariances: np.ndarray) -> np.ndarray:
     return np.sqrt(np.diag(covariances))
+
+
+def extract_upper_elements(array: np.ndarray) -> np.ndarray:
+    upper_element_indices = np.triu_indices_from(array, 1)
+    upper_elements = array[upper_element_indices]
+
+    return upper_elements

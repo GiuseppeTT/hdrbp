@@ -13,8 +13,10 @@ from hdrbp._util import (
     compute_gini,
     compute_prices,
     compute_risk_contributions,
+    compute_turnover,
     compute_variance,
     count_dates_per_year,
+    count_years,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,7 +35,7 @@ class MetricCalculator(ABC):
 
 
 class GeometricMeanReturn(MetricCalculator):
-    def __init__(self, annualized: bool = True) -> None:
+    def __init__(self, annualized: bool = False) -> None:
         self._annualized = annualized
 
     def calculate(self, result: pd.DataFrame) -> float:
@@ -56,7 +58,7 @@ class GeometricMeanReturn(MetricCalculator):
 
 
 class MeanReturn(MetricCalculator):
-    def __init__(self, annualized: bool = True) -> None:
+    def __init__(self, annualized: bool = False) -> None:
         self._annualized = annualized
 
     def calculate(self, result: pd.DataFrame) -> float:
@@ -76,7 +78,7 @@ class MeanReturn(MetricCalculator):
 
 
 class Volatility(MetricCalculator):
-    def __init__(self, annualized: bool = True) -> None:
+    def __init__(self, annualized: bool = False) -> None:
         self._annualized = annualized
 
     def calculate(self, result: pd.DataFrame) -> float:
@@ -96,7 +98,7 @@ class Volatility(MetricCalculator):
 
 
 class SharpeRatio(MetricCalculator):
-    def __init__(self, annualized: bool = True) -> None:
+    def __init__(self, annualized: bool = False) -> None:
         self._annualized = annualized
 
     def calculate(self, result: pd.DataFrame) -> float:
@@ -110,10 +112,35 @@ class SharpeRatio(MetricCalculator):
         return shape_ratio
 
 
-# TODO: Implement. Must take into account different assets between rebalances
-class Turnover(MetricCalculator):
+class MeanTurnover(MetricCalculator):
+    def __init__(self, annualized: bool = False) -> None:
+        self._annualized = annualized
+
     def calculate(self, result: pd.DataFrame) -> float:
-        raise NotImplementedError
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
+        result = _filter_rebalance_dates(result)
+
+        turnovers = result.apply(
+            lambda df: compute_turnover(
+                df["before_rebalance_assets"],
+                df["before_rebalance_weights"],
+                df["assets"],
+                df["weights"],
+            ),
+            axis="columns",
+        )
+        turnovers = turnovers.values
+
+        if self._annualized:
+            dates = pd.to_datetime(result["date"].values)
+            year_count = count_years(dates)
+            mean_turnover = np.sum(turnovers) / year_count
+        else:
+            mean_turnover = np.mean(turnovers)
+
+        return mean_turnover
 
 
 class MaxDrawdown(MetricCalculator):
@@ -131,7 +158,7 @@ class MaxDrawdown(MetricCalculator):
 
 
 class ValueAtRisk(MetricCalculator):
-    def __init__(self, probability: float = 0.95, annualized: bool = True) -> None:
+    def __init__(self, probability: float = 0.95, annualized: bool = False) -> None:
         self._probability = probability
         self._annualized = annualized
 
@@ -152,7 +179,7 @@ class ValueAtRisk(MetricCalculator):
 
 
 class ExpectedShortfall(MetricCalculator):
-    def __init__(self, probability: float = 0.95, annualized: bool = True) -> None:
+    def __init__(self, probability: float = 0.95, annualized: bool = False) -> None:
         self._probability = probability
         self._annualized = annualized
 
