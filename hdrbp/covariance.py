@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 
@@ -105,29 +105,39 @@ class ExponentialWeighted(CovarianceEstimator):
         return _apply_ewma(returns, self._smooth)
 
 
-# TODO: rename to MixtureExponentialWeighted
+def riskmetrics_2006_smooths() -> np.ndarray:
+    # https://en.wikipedia.org/wiki/Exponential_decay
+    min_mean_lifetime = 4
+    mean_lifetime_ratio = np.sqrt(2)
+    mean_lifetime_count = 14
+
+    exponents = np.arange(mean_lifetime_count)
+    mean_lifetimes = min_mean_lifetime * mean_lifetime_ratio ** exponents
+    smooths = np.exp(-1 / mean_lifetimes)
+
+    return smooths
+
+
+def riskmetrics_2006_mixture_weights() -> np.ndarray:
+    min_mean_lifetime = 4
+    mean_lifetime_ratio = np.sqrt(2)
+    mean_lifetime_count = 14
+    mixture_decay = 1560
+
+    exponents = np.arange(mean_lifetime_count)
+    mean_lifetimes = min_mean_lifetime * mean_lifetime_ratio ** exponents
+    mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(mixture_decay))
+
+    return mixture_weights
+
+
 class ExponentialWeightedMixture(CovarianceEstimator):
     # The RiskMetrics 2006 methodology
     def __init__(
         self,
-        smooths: Optional[np.ndarray] = None,
-        mixture_weights: Optional[np.ndarray] = None,
+        smooths: np.ndarray = riskmetrics_2006_smooths(),
+        mixture_weights: np.ndarray = riskmetrics_2006_mixture_weights(),
     ) -> None:
-        # https://en.wikipedia.org/wiki/Exponential_decay
-
-        if smooths is None and mixture_weights is None:
-            min_mean_lifetime = 4
-            mean_lifetime_ratio = np.sqrt(2)
-            mean_lifetime_count = 14
-            mixture_decay = 1560
-
-            exponents = np.arange(mean_lifetime_count)
-            mean_lifetimes = min_mean_lifetime * mean_lifetime_ratio ** exponents
-            smooths = np.exp(-1 / mean_lifetimes)
-            mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(mixture_decay))
-        elif (smooths is None) ^ (mixture_weights is None):
-            raise ValueError("Must provide both or none of smooths and mixture_weights")
-
         self._smooths = smooths
         self._mixture_weights = mixture_weights
 
