@@ -202,7 +202,7 @@ def _apply_ewma(returns: np.ndarray, smooth: float) -> np.ndarray:
 
     time_count, _ = returns.shape
 
-    term_count = _count_ewma_terms(smooth, max_count=time_count)
+    term_count = int(_count_ewma_terms(smooth, max_count=time_count))
     times = np.arange(term_count)
     weights = enforce_sum_one(smooth ** (time_count - times))
 
