@@ -212,7 +212,6 @@ def _apply_ewma(returns: np.ndarray, smooth: float) -> np.ndarray:
     return ewma
 
 
-# TODO: vectorize so can take max(ewma_terms) in ewma_mixture
 # TODO: Move comments to RiskMetrics1994 documentation
 def _count_ewma_terms(
     smooths: Union[float, np.ndarray],
