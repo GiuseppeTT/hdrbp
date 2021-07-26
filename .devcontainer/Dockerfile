@@ -15,7 +15,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/python:0-${PYTHON_VERSION}
 
 # Install poetry
 ## Disable virtual environment because it is both unnecessary in a container and a headache to deal with Remote-Container
-ARG POETRY_VERSION="1.1.6"
+ARG POETRY_VERSION="1.1.7"
 ENV POETRY_VIRTUALENVS_CREATE="false"
 RUN true \
     && pip3 --disable-pip-version-check --no-cache-dir install poetry==${POETRY_VERSION} \

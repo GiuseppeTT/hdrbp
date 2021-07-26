@@ -10,7 +10,7 @@
     "context": "..",
     "args": {
       "PYTHON_VERSION": "3.9",
-      "POETRY_VERSION": "1.1.6"
+      "POETRY_VERSION": "1.1.7"
     }
   },
 
