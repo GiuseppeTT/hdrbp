@@ -7,7 +7,7 @@ from hdrbp._rolling_window import RollingWindow
 from hdrbp._step import Step, parse_steps
 from hdrbp._strategy import Strategy
 from hdrbp._util import basic_repr, basic_str
-from hdrbp.metric import MetricCalculator
+from hdrbp.metric import MetricCalculator, calculate_group_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -82,29 +82,9 @@ class Backtester:
 
         metrics = (
             results.groupby(["covariance_estimator", "weight_optimizer"])
-            .apply(self._calculate_group_metrics, self._metric_calculators)
+            .apply(calculate_group_metrics, self._metric_calculators)
             .reset_index()
         )
-
-        return metrics
-
-    @staticmethod
-    def _calculate_group_metrics(result, calculators):
-        covariance_estimator = result["covariance_estimator"].values[0]
-        weight_optimizer = result["weight_optimizer"].values[0]
-        logger.debug(
-            f"Backtester: Calculating metrics of group "
-            f"{covariance_estimator=}"
-            f" and "
-            f"{weight_optimizer=}"
-        )
-
-        metrics = {}
-        for calculator in calculators:
-            metric = calculator.calculate(result)
-            metrics.update(metric)
-
-        metrics = pd.Series(metrics)
 
         return metrics
 

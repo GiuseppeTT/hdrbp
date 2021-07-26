@@ -20,17 +20,15 @@ from hdrbp._util import (
 logger = logging.getLogger(__name__)
 
 
-# TODO: rethink _calculate() method now that it is called outside of methods
 @basic_str
 @basic_repr
 class MetricCalculator(ABC):
-    def calculate(self, result: pd.DataFrame) -> dict[str, float]:
-        logger.debug(f"{self}: Calculating metric")
-
-        return {repr(self): self._calculate(result)}
+    @property
+    def name(self):
+        return repr(self)
 
     @abstractmethod
-    def _calculate(self, result):
+    def calculate(self, result: pd.DataFrame) -> float:
         pass
 
 
@@ -38,11 +36,13 @@ class GeometricMeanReturn(MetricCalculator):
     def __init__(self, annualized: bool = True) -> None:
         self._annualized = annualized
 
-    def _calculate(self, result):
-        result = result[result["return"].notna()]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
 
         returns = result["return"].values
-        log_returns = np.log(1 + returns)
+        log_returns = np.log1p(returns)
         mean_log_return = np.mean(log_returns)
 
         if self._annualized:
@@ -50,7 +50,7 @@ class GeometricMeanReturn(MetricCalculator):
             dates_per_year = count_dates_per_year(dates)
             mean_log_return = dates_per_year * mean_log_return
 
-        geometric_mean_return = np.exp(mean_log_return) - 1
+        geometric_mean_return = np.expm1(mean_log_return)
 
         return geometric_mean_return
 
@@ -59,8 +59,10 @@ class MeanReturn(MetricCalculator):
     def __init__(self, annualized: bool = True) -> None:
         self._annualized = annualized
 
-    def _calculate(self, result):
-        result = result[result["return"].notna()]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
 
         returns = result["return"].values
         mean_return = np.mean(returns)
@@ -77,8 +79,10 @@ class Volatility(MetricCalculator):
     def __init__(self, annualized: bool = True) -> None:
         self._annualized = annualized
 
-    def _calculate(self, result):
-        result = result[result["return"].notna()]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
 
         returns = result["return"].values
         volatility = np.std(returns)
@@ -95,9 +99,11 @@ class SharpeRatio(MetricCalculator):
     def __init__(self, annualized: bool = True) -> None:
         self._annualized = annualized
 
-    def _calculate(self, result):
-        mean_return = MeanReturn(self._annualized)._calculate(result)
-        volatility = Volatility(self._annualized)._calculate(result)
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        mean_return = MeanReturn(self._annualized).calculate(result)
+        volatility = Volatility(self._annualized).calculate(result)
 
         shape_ratio = mean_return / volatility
 
@@ -106,13 +112,15 @@ class SharpeRatio(MetricCalculator):
 
 # TODO: Implement. Must take into account different assets between rebalances
 class Turnover(MetricCalculator):
-    def _calculate(self, result):
+    def calculate(self, result: pd.DataFrame) -> float:
         raise NotImplementedError
 
 
 class MaxDrawdown(MetricCalculator):
-    def _calculate(self, result):
-        result = result[result["return"].notna()]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
 
         returns = result["return"].values
         prices = compute_prices(returns)
@@ -127,8 +135,10 @@ class ValueAtRisk(MetricCalculator):
         self._probability = probability
         self._annualized = annualized
 
-    def _calculate(self, result):
-        result = result[result["return"].notna()]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
 
         returns = result["return"].values
         value_at_risk = np.quantile(returns, 1 - self._probability)
@@ -146,8 +156,10 @@ class ExpectedShortfall(MetricCalculator):
         self._probability = probability
         self._annualized = annualized
 
-    def _calculate(self, result):
-        result = result[result["return"].notna()]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_valid_returns(result)
 
         returns = result["return"].values
         cut_off = np.quantile(returns, 1 - self._probability)
@@ -163,22 +175,24 @@ class ExpectedShortfall(MetricCalculator):
 
 
 class MeanWeightGini(MetricCalculator):
-    def _calculate(self, result):
-        is_rebalance = result["is_rebalance"].values
-        result = result[is_rebalance]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_rebalance_dates(result)
 
         weights = result["weights"]
         weights_gini = weights.apply(compute_gini)
         weights_gini = weights_gini.values
-        mean_weights_gini = np.mean(weights_gini)
+        mean_weight_gini = np.mean(weights_gini)
 
-        return mean_weights_gini
+        return mean_weight_gini
 
 
 class MeanRiskContributionGini(MetricCalculator):
-    def _calculate(self, result):
-        is_rebalance = result["is_rebalance"].values
-        result = result[is_rebalance]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_rebalance_dates(result)
 
         risk_contributions = result.apply(
             lambda df: compute_risk_contributions(df["covariances"], df["weights"]),
@@ -186,15 +200,16 @@ class MeanRiskContributionGini(MetricCalculator):
         )
         risk_contributions_gini = risk_contributions.apply(compute_gini)
         risk_contributions_gini = risk_contributions_gini.values
-        mean_risk_contributions_gini = np.mean(risk_contributions_gini)
+        mean_risk_contribution_gini = np.mean(risk_contributions_gini)
 
-        return mean_risk_contributions_gini
+        return mean_risk_contribution_gini
 
 
 class MeanVariance(MetricCalculator):
-    def _calculate(self, result):
-        is_rebalance = result["is_rebalance"].values
-        result = result[is_rebalance]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_rebalance_dates(result)
 
         variances = result.apply(
             lambda df: compute_variance(df["covariances"], df["weights"]),
@@ -207,9 +222,10 @@ class MeanVariance(MetricCalculator):
 
 
 class MeanCorrelation(MetricCalculator):
-    def _calculate(self, result):
-        is_rebalance = result["is_rebalance"].values
-        result = result[is_rebalance]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_rebalance_dates(result)
 
         correlations = result.apply(
             lambda df: compute_correlation(df["covariances"], df["weights"]),
@@ -222,9 +238,10 @@ class MeanCorrelation(MetricCalculator):
 
 
 class MeanDiversificationRatio(MetricCalculator):
-    def _calculate(self, result):
-        is_rebalance = result["is_rebalance"].values
-        result = result[is_rebalance]
+    def calculate(self, result: pd.DataFrame) -> float:
+        logger.debug(f"{self}: Calculating metric")
+
+        result = _filter_rebalance_dates(result)
 
         diversification_ratios = result.apply(
             lambda df: compute_diversification_ratio(df["covariances"], df["weights"]),
@@ -234,3 +251,38 @@ class MeanDiversificationRatio(MetricCalculator):
         mean_diversification_ratio = np.mean(diversification_ratios)
 
         return mean_diversification_ratio
+
+
+def _filter_valid_returns(result):
+    is_valid_returns = result["return"].notna()
+    filtered_result = result[is_valid_returns]
+
+    return filtered_result
+
+
+def _filter_rebalance_dates(result):
+    is_rebalance = result["is_rebalance"].values
+    filtered_result = result[is_rebalance]
+
+    return filtered_result
+
+
+def calculate_group_metrics(result: pd.DataFrame, calculators: list[MetricCalculator]) -> pd.Series:
+    covariance_estimator = result["covariance_estimator"].values[0]
+    weight_optimizer = result["weight_optimizer"].values[0]
+    logger.debug(
+        f"Backtester: Calculating metrics of group "
+        f"{covariance_estimator=}"
+        f" and "
+        f"{weight_optimizer=}"
+    )
+
+    metrics = {}
+    for calculator in calculators:
+        name = calculator.name
+        metric = calculator.calculate(result)
+        metrics.update({name: metric})
+
+    metrics = pd.Series(metrics)
+
+    return metrics
