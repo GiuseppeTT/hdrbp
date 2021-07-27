@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import random_correlation
 
-from hdrbp._util import build_covariances, count_digits, enforce_sum_one
+from hdrbp._util import build_covariances, count_digits, enforce_unitary_sum
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ def _generate_standard_deviations(generator, asset_count, shape, scale):
 def _generate_correlations(generator, asset_count, location, scale):
     eigen_values = generator.normal(location, scale, size=asset_count)
     eigen_values = np.exp(eigen_values)
-    eigen_values = asset_count * enforce_sum_one(eigen_values)
+    eigen_values = asset_count * enforce_unitary_sum(eigen_values)
 
     return random_correlation.rvs(eigen_values)
 

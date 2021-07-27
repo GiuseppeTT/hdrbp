@@ -6,7 +6,7 @@ from typing import Optional
 import numpy as np
 
 from hdrbp._step import StepData, StepEstimationResult, StepHoldingResult, StepResult
-from hdrbp._util import basic_repr, basic_str, enforce_sum_one
+from hdrbp._util import basic_repr, basic_str, enforce_unitary_sum
 from hdrbp.covariance import CovarianceEstimator
 from hdrbp.weight import WeightOptimizer
 
@@ -88,7 +88,7 @@ def _propagate_weights(rebalance_weights, asset_returns):
     weights = []
     for current_asset_returns in asset_returns:
         current_return = current_weights @ current_asset_returns
-        current_weights = enforce_sum_one(current_weights * (1 + current_asset_returns))
+        current_weights = enforce_unitary_sum(current_weights * (1 + current_asset_returns))
 
         returns.append(current_return)
         weights.append(current_weights)

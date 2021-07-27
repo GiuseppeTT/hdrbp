@@ -10,7 +10,7 @@ from hdrbp._util import (
     basic_str,
     build_covariances,
     demean,
-    enforce_sum_one,
+    enforce_unitary_sum,
     extract_correlations,
     extract_standard_deviations,
     extract_upper_elements,
@@ -126,7 +126,7 @@ def riskmetrics_2006_mixture_weights() -> np.ndarray:
 
     exponents = np.arange(mean_lifetime_count)
     mean_lifetimes = min_mean_lifetime * mean_lifetime_ratio ** exponents
-    mixture_weights = enforce_sum_one(1 - np.log(mean_lifetimes) / np.log(mixture_decay))
+    mixture_weights = enforce_unitary_sum(1 - np.log(mean_lifetimes) / np.log(mixture_decay))
 
     return mixture_weights
 
@@ -176,7 +176,7 @@ def _apply_ewma_mixture(
     times = np.arange(max_term_count)
     times = times[:, np.newaxis]
 
-    ewma_weights = enforce_sum_one(smooths ** (time_count - times), axis=0)
+    ewma_weights = enforce_unitary_sum(smooths ** (time_count - times), axis=0)
     weights = np.einsum("ij, j -> i", ewma_weights, mixture_weights)
 
     returns = returns[-max_term_count:, :]
@@ -204,7 +204,7 @@ def _apply_ewma(returns: np.ndarray, smooth: float) -> np.ndarray:
 
     term_count = int(_count_ewma_terms(smooth, max_count=time_count))
     times = np.arange(term_count)
-    weights = enforce_sum_one(smooth ** (time_count - times))
+    weights = enforce_unitary_sum(smooth ** (time_count - times))
 
     returns = returns[-term_count:, :]
     ewma = np.einsum("ki, kj, k -> ij", returns, returns, weights)

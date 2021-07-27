@@ -90,7 +90,7 @@ def compute_prices(returns: np.ndarray) -> np.ndarray:
 
 def compute_risk_contributions(covariances: np.ndarray, weights: np.ndarray) -> float:
     risk_contributions = weights * (covariances @ weights)
-    risk_contributions = enforce_sum_one(risk_contributions)
+    risk_contributions = enforce_unitary_sum(risk_contributions)
 
     return risk_contributions
 
@@ -145,7 +145,7 @@ def demean(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
     return array - np.mean(array, *args, **kwargs)
 
 
-def enforce_sum_one(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
+def enforce_unitary_sum(array: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
     return array / np.sum(array, *args, **kwargs)
 
 

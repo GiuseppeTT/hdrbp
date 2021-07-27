@@ -10,7 +10,7 @@ from hdrbp._util import (
     ERROR_TOLERANCE,
     basic_repr,
     basic_str,
-    enforce_sum_one,
+    enforce_unitary_sum,
     extract_correlations,
     extract_solution,
     extract_standard_deviations,
@@ -33,7 +33,7 @@ class EqualWeight(WeightOptimizer):
 
         _, asset_count = covariances.shape
         weights = np.ones(asset_count)
-        weights = enforce_sum_one(weights)
+        weights = enforce_unitary_sum(weights)
 
         return weights
 
@@ -151,7 +151,7 @@ class NaiveEqualRiskContribution(WeightOptimizer):
         logger.debug(f"{self}: Optimizing weights")
 
         volatilities = extract_standard_deviations(covariances)
-        weights = enforce_sum_one(1 / volatilities)
+        weights = enforce_unitary_sum(1 / volatilities)
 
         return weights
 
@@ -215,7 +215,7 @@ class MostDiversified(WeightOptimizer):
         # By the optimization design, the solution is not guaranteed to sum to one
         optimization_results = cvxopt.solvers.qp(P, q, G, h, A, b, options=CVXOPT_OPTIONS)
         weights = extract_solution(optimization_results)
-        weights = enforce_sum_one(weights)
+        weights = enforce_unitary_sum(weights)
 
         return weights
 
