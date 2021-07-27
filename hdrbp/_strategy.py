@@ -13,6 +13,7 @@ from hdrbp.weight import WeightOptimizer
 logger = logging.getLogger(__name__)
 
 
+# TODO: rename to portfolio?
 @basic_str
 @basic_repr
 class Strategy:
