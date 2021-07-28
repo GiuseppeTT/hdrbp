@@ -3,11 +3,11 @@ from typing import Optional
 
 import pandas as pd
 
+from hdrbp._portfolio import Portfolio
 from hdrbp._rolling_window import RollingWindow
 from hdrbp._step import Step, parse_steps
-from hdrbp._strategy import Strategy
 from hdrbp._util import basic_repr, basic_str
-from hdrbp.metric import MetricCalculator, calculate_strategy_metrics
+from hdrbp.metric import MetricCalculator, calculate_portfolio_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +18,11 @@ class Backtester:
     def __init__(
         self,
         rolling_window: RollingWindow,
-        strategies: list[Strategy],
+        portfolios: list[Portfolio],
         metric_calculators: list[MetricCalculator],
     ) -> None:
         self._rolling_window = rolling_window
-        self._strategies = strategies
+        self._portfolios = portfolios
         self._metric_calculators = metric_calculators
 
         self._steps: Optional[list[Step]] = None
@@ -47,26 +47,26 @@ class Backtester:
             logger.info(f"{self}: Backtesting step {index}/{possible_step_count-1}")
 
             data = self._rolling_window.extract_data(index, returns, covariates)
-            results = self._backtest_strategies(data)
+            results = self._backtest_portfolios(data)
             step = Step(index, data, results)
 
             steps.append(step)
 
         return steps
 
-    def _backtest_strategies(self, data):
+    def _backtest_portfolios(self, data):
         results = []
         covariances_cache = {}
-        for strategy in self._strategies:
+        for portfolio in self._portfolios:
             try:
-                covariances = covariances_cache[strategy.covariance_estimator]
+                covariances = covariances_cache[portfolio.covariance_estimator]
             except KeyError:
-                result = strategy.backtest(data)
+                result = portfolio.backtest(data)
 
                 covariances = result.estimation.covariances
-                covariances_cache[strategy.covariance_estimator] = covariances
+                covariances_cache[portfolio.covariance_estimator] = covariances
             else:
-                result = strategy.backtest(data, covariances)
+                result = portfolio.backtest(data, covariances)
 
             results.append(result)
 
@@ -82,7 +82,7 @@ class Backtester:
 
         metrics = (
             results.groupby(["covariance_estimator", "weight_optimizer"])
-            .apply(calculate_strategy_metrics, self._metric_calculators)
+            .apply(calculate_portfolio_metrics, self._metric_calculators)
             .reset_index()
         )
 

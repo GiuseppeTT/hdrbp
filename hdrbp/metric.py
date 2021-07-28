@@ -294,16 +294,16 @@ def _filter_rebalance_dates(result):
     return filtered_result
 
 
-def calculate_strategy_metrics(
+def calculate_portfolio_metrics(
     result: pd.DataFrame,
     calculators: list[MetricCalculator],
 ) -> pd.Series:
     covariance_estimator = result["covariance_estimator"].values[0]
     weight_optimizer = result["weight_optimizer"].values[0]
     logger.debug(
-        f"Backtester: Calculating metrics of group "
+        f"Backtester: Calculating metrics of portfolio "
         f"{covariance_estimator=}"
-        f" and "
+        f" + "
         f"{weight_optimizer=}"
     )
 

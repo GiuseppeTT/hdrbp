@@ -1,6 +1,6 @@
 import logging
 
-from hdrbp import Backtester, RollingWindow, Strategy
+from hdrbp import Backtester, Portfolio, RollingWindow
 from hdrbp.asset import TopAsset
 from hdrbp.covariance import (
     EqualCorrelation,
@@ -101,7 +101,7 @@ def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_
         asset_rule=TopAsset(portfolio_size),
     )
 
-    strategies = Strategy.from_product(
+    portfolios = Portfolio.from_product(
         covariance_estimators=[
             EqualCorrelation(),
             EqualVariance(),
@@ -137,7 +137,7 @@ def define_backtester(estimation_size, holding_size, rebalance_scale, portfolio_
         Volatility(),
     ]
 
-    backtester = Backtester(rolling_window, strategies, metric_calculators)
+    backtester = Backtester(rolling_window, portfolios, metric_calculators)
 
     return backtester
 

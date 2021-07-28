@@ -13,10 +13,9 @@ from hdrbp.weight import WeightOptimizer
 logger = logging.getLogger(__name__)
 
 
-# TODO: rename to portfolio?
 @basic_str
 @basic_repr
-class Strategy:
+class Portfolio:
     def __init__(
         self,
         covariance_estimator: CovarianceEstimator,
@@ -30,14 +29,14 @@ class Strategy:
         cls,
         covariance_estimators: list[CovarianceEstimator],
         weight_optimizers: list[WeightOptimizer],
-    ) -> list[Strategy]:
-        strategies = []
+    ) -> list[Portfolio]:
+        portfolios = []
         for covariance_estimator in covariance_estimators:
             for weight_optimizer in weight_optimizers:
-                strategy = cls(covariance_estimator, weight_optimizer)
-                strategies.append(strategy)
+                portfolio = cls(covariance_estimator, weight_optimizer)
+                portfolios.append(portfolio)
 
-        return strategies
+        return portfolios
 
     @property
     def covariance_estimator(self) -> CovarianceEstimator:
