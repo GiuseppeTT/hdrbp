@@ -45,7 +45,7 @@
 
   // "forwardPorts": [],
 
-  "postCreateCommand": "poetry install",
+  "postCreateCommand": "poetry install --no-root",
 
   // Comment out to connect as root instead
   // For details, see https://aka.ms/vscode-remote/containers/non-root
