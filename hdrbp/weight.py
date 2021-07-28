@@ -19,6 +19,7 @@ from hdrbp._util import (
 logger = logging.getLogger(__name__)
 
 
+# TODO: Add id property that defaults to repr? id would be set in __init__
 @basic_str
 @basic_repr
 class WeightOptimizer(ABC):

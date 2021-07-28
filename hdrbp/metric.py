@@ -22,13 +22,10 @@ from hdrbp._util import (
 logger = logging.getLogger(__name__)
 
 
+# TODO: Add id property that defaults to repr? id would be set in __init__
 @basic_str
 @basic_repr
 class MetricCalculator(ABC):
-    @property
-    def name(self):
-        return repr(self)
-
     @abstractmethod
     def calculate(self, result: pd.DataFrame) -> float:
         pass
@@ -309,9 +306,9 @@ def calculate_portfolio_metrics(
 
     metrics = {}
     for calculator in calculators:
-        name = calculator.name
+        id = repr(calculator)
         metric = calculator.calculate(result)
-        metrics.update({name: metric})
+        metrics.update({id: metric})
 
     metrics = pd.Series(metrics)
 
