@@ -17,7 +17,7 @@ class AssetRule(ABC):
         self._size = size
 
     @abstractmethod
-    def select_assets(
+    def extract_assets(
         self,
         returns: pd.DataFrame,
         covariates: Optional[pd.DataFrame] = None,
@@ -26,12 +26,12 @@ class AssetRule(ABC):
 
 
 class ValidAsset(AssetRule):
-    def select_assets(
+    def extract_assets(
         self,
         returns: pd.DataFrame,
         covariates: Optional[pd.DataFrame] = None,
     ) -> pd.Index:
-        logger.debug(f"{self}: Selecting assets")
+        logger.debug(f"{self}: Extracting assets")
 
         valid_assets = _find_valid_assets(returns, covariates)
         size = _default_size(self._size, valid_assets)
@@ -46,12 +46,12 @@ class RandomAsset(AssetRule):
         super().__init__(size)
         self._seed = seed
 
-    def select_assets(
+    def extract_assets(
         self,
         returns: pd.DataFrame,
         covariates: Optional[pd.DataFrame] = None,
     ) -> pd.Index:
-        logger.debug(f"{self}: Selecting assets")
+        logger.debug(f"{self}: Extracting assets")
 
         valid_assets = _find_valid_assets(returns, covariates)
         size = _default_size(self._size, valid_assets)
@@ -70,12 +70,12 @@ class TopAsset(AssetRule):
         super().__init__(size)
         self._summarizer = summarizer
 
-    def select_assets(
+    def extract_assets(
         self,
         returns: pd.DataFrame,
         covariates: Optional[pd.DataFrame] = None,
     ) -> pd.Index:
-        logger.debug(f"{self}: Selecting assets")
+        logger.debug(f"{self}: Extracting assets")
 
         if covariates is None:
             raise ValueError("Covariates must be provided.")

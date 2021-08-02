@@ -16,31 +16,31 @@ class DateRule(ABC):
         self._holding_size = holding_size
 
     def count_possible_steps(self, dates: pd.DatetimeIndex) -> int:
-        # Basically an inversion of "start formula" in filter_holding_dates method
+        # Basically an inversion of "start formula" in extract_holding_dates method
         break_dates = self._break_dates(dates)
         possible_count = (break_dates.size - self._estimation_size) // self._holding_size
 
         return possible_count
 
-    def filter_estimation_dates(self, index: int, dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
-        logger.debug(f"{self}: Filtering estimation dates")
+    def extract_estimation_dates(self, index: int, dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
+        logger.debug(f"{self}: Extracting estimation dates")
 
         start = index * self._holding_size
         end = index * self._holding_size + self._estimation_size
-        filtered_dates = self._filter_dates(dates, start, end)
+        extracted_dates = self._extract_dates(dates, start, end)
 
-        return filtered_dates
+        return extracted_dates
 
-    def filter_holding_dates(self, index: int, dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
-        logger.debug(f"{self}: Filtering holding dates")
+    def extract_holding_dates(self, index: int, dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
+        logger.debug(f"{self}: Extracting holding dates")
 
         start = index * self._holding_size + self._estimation_size
         end = index * self._holding_size + self._estimation_size + self._holding_size
-        filtered_dates = self._filter_dates(dates, start, end)
+        extracted_dates = self._extract_dates(dates, start, end)
 
-        return filtered_dates
+        return extracted_dates
 
-    def _filter_dates(self, dates, start, end):
+    def _extract_dates(self, dates, start, end):
         break_dates = self._break_dates(dates)
 
         min_date = break_dates[start]
@@ -51,10 +51,10 @@ class DateRule(ABC):
         except IndexError:
             max_date = pd.Timestamp.max
 
-        is_filtered_dates = (min_date <= dates) & (dates < max_date)
-        filtered_dates = dates[is_filtered_dates]
+        is_extracted_dates = (min_date <= dates) & (dates < max_date)
+        extracted_dates = dates[is_extracted_dates]
 
-        return filtered_dates
+        return extracted_dates
 
     @abstractmethod
     def _break_dates(self, dates):

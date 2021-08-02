@@ -11,7 +11,6 @@ from hdrbp.date import DateRule
 logger = logging.getLogger(__name__)
 
 
-# TODO: unify extract, filter and select methods into, maybe, extract?
 @basic_str
 @basic_repr
 class RollingWindow:
@@ -53,11 +52,11 @@ class RollingWindow:
 
     def _extract_estimation_subset(self, index, returns, covariates):
         raw_dates = returns.index
-        dates = self._date_rule.filter_estimation_dates(index, raw_dates)
+        dates = self._date_rule.extract_estimation_dates(index, raw_dates)
 
         raw_returns = returns.loc[dates, :]
         raw_covariates = None if covariates is None else covariates.loc[dates, :]
-        assets = self._asset_rule.select_assets(raw_returns, raw_covariates)
+        assets = self._asset_rule.extract_assets(raw_returns, raw_covariates)
 
         return dates, assets
 
@@ -73,6 +72,6 @@ class RollingWindow:
 
     def _extract_holding_subset(self, index, returns):
         raw_dates = returns.index
-        dates = self._date_rule.filter_holding_dates(index, raw_dates)
+        dates = self._date_rule.extract_holding_dates(index, raw_dates)
 
         return dates
